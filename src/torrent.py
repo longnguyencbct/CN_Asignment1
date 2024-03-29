@@ -1,62 +1,42 @@
 from bencode import bencode,bdecode
 class TorrentFile:
-    def __init__(self,
-                 announce="",
-                 create_by="",
-                 creation_date="",
-                 encoding="",
-                 comment="",
-                 info = {   "name":"",
-                            "files":[
-                             {"length":1*1024*1024, # in byte 1MB length: 1024*1024
-                              "mdssum":0, # 
-                              "path":[""]},
-                              {"length":512*1024,
-                              "mdssum":0,
-                              "path":[""]},
-                              {"length":2*1024*1024,
-                              "mdssum":0,
-                              "path":[""]}],
-                            "piece_length":512*1024, 
-                            "pieces":7
+        def __init__(self,
+                announce="",                                    # The announce URL of the tracker (string)
+                info = {                                        # a dictionary that describes the file(s) of the torrent.
+                        "name":"movie",                         # the name of the directory in which to store all the files.      
+                        "piece_length":512*1024,                        # number of bytes in each piece (integer) 
+                        "pieces":"dvbsdsfsd",                           # string consisting of the concatenation of all 20-byte SHA1 hash values, one per piece (byte string, i.e. not urlencoded)
+                        "files":[                                       #multi-file module
+                                {"length":1*1024*1024,                          # length of the file in bytes (integer)
+                                "path":["folder0","folder1","abc.mp4"]},        # a list containing one or more string elements that together represent the path and filename.
+                                {"length":512*1024,
+                                "path":["folder2","folder3","xyz.mp4"]},
+                                {"length":2*1024*1024,
+                                "path":["folder0","folder1","temp","pokemon.mp4"]}]
                         }
                 ):
-        self.announce = announce
-        self.create_by = create_by
-        self.creation_date = creation_date
-        self.encoding = encoding
-        self.comment = comment
-        self.info = info
+                self.announce = announce
+                self.info = info
+        def bencode_TorrentFile(self):
+                return bencode(self.announce)+bencode(self.info)
+        def bdecode_TorrentFile(self,bencoded_msg):
+                str_i=0
+                str_num=""
+                while(bencoded_msg[str_i]!=":"):
+                        str_num+=bencoded_msg[str_i]
+                        str_i+=1
+                index=int(str_num)+3
+                self.announce = bdecode(bencoded_msg[:index])
+                self.info = bdecode(bencoded_msg[index:])
 
+# test1=TorrentFile(announce="trackerabc.com")
+# test2=TorrentFile()
+# temp=test1.bencode_TorrentFile()
+# print("=========================")
+# print(temp)
+# print("=========================")
+# print(test2.bencode_TorrentFile())
+# print("=========================")
+# test2.bdecode_TorrentFile(temp)#######################
+# print(test2.bencode_TorrentFile())
 
-
-
-# a=10
-# b="hello"
-# c=[1,"hello",3]
-# d={"a":1,"b":2}
-
-# bencoded_a=bencode(a)
-# bencoded_b=bencode(b)
-# bencoded_c=bencode(c)
-# bencoded_d=bencode(d)
-# print(bencoded_a)
-# print(bencoded_b)
-# print(bencoded_c)
-# print(bencoded_d)
-# decoded_bencoded_a=bdecode(bencoded_a)
-# decoded_bencoded_b=bdecode(bencoded_b)
-# decoded_bencoded_c=bdecode(bencoded_c)
-# decoded_bencoded_d=bdecode(bencoded_d)
-
-
-
-# print((decoded_bencoded_a))
-# print((decoded_bencoded_b))
-# print((decoded_bencoded_c))
-# print((decoded_bencoded_d))
-
-# print(a==(decoded_bencoded_a))
-# print(b==(decoded_bencoded_b))
-# print(c==(decoded_bencoded_c))
-# print(d==(decoded_bencoded_d))
