@@ -1,77 +1,80 @@
 from time import sleep
 import threading
-from request_response_struct import request_struct,response_struct
+import socket
+from bencode import bencode,bdecode
 
-class Tracker:
-    def __init__(self, currTorrent=response_struct(), request_queue=[]):
-        self.currTorrent = currTorrent
-        self.request_queue = request_queue
-        self.running = True
-        self.display_requests = False  # Flag to control display of requests
+HEADER = 1024
+PORT = 5050
+SERVER = socket.gethostbyname(socket.gethostname())
+ADDR = (SERVER,PORT)
+FORMAT = 'utf-8'
 
-    def request_sniffing(self):
-        temp = 0
-        while self.running:
-            sleep(1)
-            #####################################################################
-            new_request = request_struct(f"Sample magnet link {temp}")
-            # GET NEW REQUEST HERE
-            # TODO
-            # READ FROM CLIENT "request_struck" object
-            #####################################################################
-            self.request_queue.append(new_request)
-            if self.display_requests:  # Check if display flag is set
-                print("Added request to queue:", new_request.magnet_text)
-            temp += 1
+PEER_SET=[]
 
-    def tracker_response(self):
-        while self.running:
-            while len(self.request_queue) != 0:
-                head_request = self.request_queue.pop(0)
-                #################################################################
-                # RESPOND REQUEST HERE
-                # TODO
-                # ANALYZE HEAD REQUEST
-                # SEND BACK CLIENT A "response_struct" OBJECT
-                #################################################################
-                if self.display_requests:  # Check if display flag is set
-                    print("Responding request:", head_request.magnet_text)
-                    peer_set_id=[]
-                    for i in self.currTorrent.peer_set:
-                        peer_set_id.append(i["peer_id"])
-                    print("Current Peer Set ID:", peer_set_id)
-            sleep(5)
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(ADDR)
 
-    def handle_user_input(self):
-        while True:
-            command = input("Type '/quit' to terminate the program, '/display' to toggle display: ")
-            if command.strip() == "/quit":
-                self.running = False  # Set the running flag to False to terminate the threads
-                break  # Break out of the loop to exit the program
-            elif command.strip() == "/display":
-                self.display_requests = not self.display_requests  # Toggle the display flag
-    def UpdateTorrent(self):
-        while self.running:
-            print("################\nUpdated Peer Set\n################")
-            self.currTorrent.update_peer_set()
-            sleep(20)
-    def tracker_main(self):
-        update_Torrent_thread= threading.Thread(target=self.UpdateTorrent)
-        request_sniffing_thread = threading.Thread(target=self.request_sniffing)
-        tracker_response_thread = threading.Thread(target=self.tracker_response)
-        user_input_thread = threading.Thread(target=self.handle_user_input)
 
-        update_Torrent_thread.start()
-        request_sniffing_thread.start()
-        tracker_response_thread.start()
-        user_input_thread.start()
+    
+def  handle_client(conn, addr): # Run for each Peer connected
+    print(f"\n[NEW CONNECTION] {addr} connected.")
+    #################################################
+    # GET PEER INFO HERE
+    # TODO
+    peer_info_length= conn.recv(HEADER).decode(FORMAT)
+    peer_info_length = int(peer_info_length)
+    peer_info = bdecode(conn.recv(peer_info_length).decode(FORMAT))
 
-        # Wait for threads to finish (which they never will in this example because of the infinite loops)
-        update_Torrent_thread.join()
-        request_sniffing_thread.join()
-        tracker_response_thread.join()
-        user_input_thread.join()
+    #################################################
+    #################################################
+    # Update Peer Set when new Peer connects
+    PEER_SET.append(peer_info)
+    #################################################
+    conn.send("Updated Peer Set".encode(FORMAT)) # send "Updated Peer Set"
+    connected = True
+    while connected:
+        msg_length= conn.recv(HEADER).decode(FORMAT)
+        if msg_length:
+            msg_length = int(msg_length)
+            msg = bdecode(conn.recv(msg_length).decode(FORMAT))
+            print(f"[{addr}] {msg}")
+
+
+            match msg:
+                case "/quit":
+                    print(f"[PEER LEFT] {addr}")
+                    conn.send("Disconnected".encode(FORMAT)) # send "Disconnected"
+                    connected = False
+                case "/get_peer_set":
+                    print(f"[PEER SET] {PEER_SET}")
+                    print(type(msg))
+                    conn.send(bencode(PEER_SET).encode(FORMAT)) # send PEER SET string
+                    connected = True
+                case "/update_status":
+                    print(f"[PEER UPDATE] {addr}")
+                    ###########################################
+                    # UPDATE PEER SET HERE
+                    # TODO
+                    ###########################################
+                    connected = True
+                case _:
+                    conn.send("Invalid command".encode(FORMAT))
+                    connected = True
+    #################################################
+    # Update Peer Set when Peer disconnect
+    PEER_SET.remove(peer_info)
+    #################################################
+    conn.close()
+def start():
+    server.listen()
+    print(f"[LISTENING] Tracker is listening on {SERVER}")
+    while True:
+        conn,addr = server.accept()
+        thread = threading.Thread(target=handle_client,args=(conn,addr))
+        thread.start()
+        print(f"\n[ACTIVE CONNECTION] {threading.active_count()-1}")
+        
 
 if __name__ == "__main__":
-    t = Tracker()
-    t.tracker_main()
+    print("[STARTING] Tracker is starting")
+    start()
