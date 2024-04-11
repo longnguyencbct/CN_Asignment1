@@ -1,7 +1,7 @@
-from peer import Peer_Info
+from peer import *
 from random import randint
 from bencode import bencode,bdecode
-
+from peer import *
 class request_struct:
     def __init__(self, magnet_text, request_state="STARTED", bytes_downloaded=0):
         self.magnet_text = magnet_text
