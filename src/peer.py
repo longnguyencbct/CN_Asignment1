@@ -1,11 +1,9 @@
 from peer_helper import *
-running=True
-tracker_connected=False
 connected_peers={}
 
 def command_handler(user_input):
     global running, tracker_connected, connected_peers
-    user_input_parts=[]
+    user_input_parts=user_input.split()
 
     match user_input_parts[0]:
 
@@ -56,7 +54,6 @@ if __name__ == "__main__":
     chunk_directory = 'Memory'
     save_chunks_to_peer(chunk_directory) # check file in [chunk_directory], then split file into chunks and save them to [chunk_directory]
 
-    # send(this_peer_info)
     while running:
         print(f"[{this_peer_info["ip"]},{this_peer_info["port"]}] ",end='')
         user_input = input()

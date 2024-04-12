@@ -3,12 +3,13 @@ README
 PEER(peer.py)
 
 - peer-tracker communication cmds: 
-	/connect_tracker: (ok)
+	/connect_tracker: (ok) (done) (testing)
 		1/ Peer todo: establish connection to tracker 
-		2/ Tracker response: "Tracker established connection to Peer[peer_ip]" (tracker runs a "listening peer cmds" while-loop thread)
-		3/ Peer todo: tracker_connected = True 
-		4/ run /get_peer_set
-	/get_peer_set: (ok)
+		2/ Peer todo: send bencoded peer_info to tracker
+		3/ Tracker response: "Tracker established connection to Peer[peer_ip]" (tracker runs a "listening peer cmds" while-loop thread)
+		4/ Peer todo: tracker_connected = True 
+		5/ run /get_peer_set
+	/get_peer_set: (ok) (done) (testing)
 		1/ run /check_tracker_connected. Go to step 2/ if returned True
 		2/ Peer todo: send "/get_peer_set" (string msg) to tracker.
 		3/ Tracker response: bencoded tracker's PEER_SET (string)
@@ -21,13 +22,13 @@ PEER(peer.py)
 		5/ run /get_peer_set
 	/disconnect_tracker: (ok)
 		1/ run /check_tracker_connected. Go to step 2/ if returned True 
-		2/ Peer todo: send "/disconnect_tracker" (string msg) to tracker 
+		2/ Peer todo: send bencoded "/disconnect_tracker" (string msg) to tracker 
 		3/ Tracker response: "Peer[peer_id] disconnected from tracker"
 		4/ Peer todo: tracker_connected = False,
 		Note: peer disconnect from tracker but can still upload/download chunks to/from peers ( tracker stops "listening peer cmds" thread)
 	/quit_torrent: (ok)
 		1/ run /check_tracker_connected. Run /connect_tracker then Go to step 2/ if returned False
-		2/ Peer todo: send "/quit_torrent" (string msg) to tracker
+		2/ Peer todo: # 2/ send bencoded "/quit_torrent" (string msg) to tracker 
 		3/ Tracker response: "Peer[peer_id] quited torrent"
 		4/ Peer todo: leave the torrent and won't upload/ download chunks (peer.py program stops running)
 
@@ -42,10 +43,9 @@ PEER(peer.py)
 
 	/request_download [target_peer_IP] [missing_chunks[i]]: (ok)
 		1/ run /check_target_peer_connected [target_peer_IP]. Go to step 2/ if returned True 
-		2/ This peer todo: send "/request_download" (string msg) to [target_peer_IP].
-		3/ This peer todo: send "[missing_chunks[i]]" (string msg) to [target_peer_IP]. ([missing_chunks[i]] is name of the chunk file)
-		4/ Target peer response: "Peer[target_peer_IP] starts uploading chunk [missing_chunks[i]] to Peer[this_peer_ip]" 
-		5/ This peer todo: Save new chunk to Memory_peer folder
+		2/ This peer todo: send "/request_download [target_peer_IP] [missing_chunks[i]]" (string msg) to [target_peer_IP].([missing_chunks[i]] is name of the chunk file)
+		3/ Target peer response: "Peer[target_peer_IP] starts uploading chunk [missing_chunks[i]] to Peer[this_peer_ip]" 
+		4/ This peer todo: Save new chunk to Memory_peer folder
 
  	/upload [request_peer_ip] [chunk_name]:
 		1/ run /check_target_peer_connected [target_peer_IP]. Go to step 2/ if returned True 
@@ -56,7 +56,7 @@ PEER(peer.py)
 
 	/disconnect_peer [target_peer_IP]: 
 		1/ run /check_target_peer_connected [target_peer_IP]. Go to step 2/ if returned True
-		2/ This peer todo: send "/disconnect_peer" to [target_peer_IP]
+		2/ This peer todo: send "/disconnect_peer [target_peer_IP]" to [target_peer_IP]
 		3/ Target peer response: "Peer[this_peer_id] disconnected from Peer[target_peer_ip]"
 		4/ This peer todo: connected_peers[target_peer_IP]=False
 
@@ -85,7 +85,8 @@ PEER(peer.py)
 		1/ check if [chunk name] exist in curr_chunks=[...]:
 			+ True: Return True
 			+ False: Peer todo: print "Peer[this_peer_ip] peer does not have [chunk_name]"
-	/see_peer_set
+	/see_peer_set: (ok) (done) (testing)
+		1/ print Peer_set
 	/see_connected
 	/see_current_chunks
 	/see_missing_chunks
@@ -94,10 +95,11 @@ PEER(peer.py)
 
 TRACKER(tracker.py)
 - tracker listening to connected peers:
-	received "/get_peer_set":
-	received "/update_status_to_tracker":
-	received "/disconnect_tracker"
-	received "/quit_torrent"
+	respond to "/connect_tracker" (done) (testing)
+	respond to "/get_peer_set" (done) (testing)
+	respond to "/update_status_to_tracker"
+	respond to "/disconnect_tracker" (done) (testing)
+	respond to "/quit_torrent" (done) (testing)
 - tracker functionality:
 	
 		
