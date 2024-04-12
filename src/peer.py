@@ -1,75 +1,64 @@
-import socket
-from bencode import bencode,bdecode
+from peer_helper import *
+running=True
+tracker_connected=False
+connected_peers={}
 
-HEADER = 1024
-PORT = 5050
-FORMAT = 'utf-8'
-DISCONNECT_MESSAGE = "/quit"
-SERVER = "192.168.1.181"
-CLIENT = socket.gethostbyname(socket.gethostname())
-SERVER_ADDR = (SERVER, PORT)
+def command_handler(user_input):
+    global running, tracker_connected, connected_peers
+    user_input_parts=[]
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(SERVER_ADDR)
+    match user_input_parts[0]:
 
-def send(msg):
-    message = bencode(msg).encode(FORMAT)
-    msg_length = len(message)
-    send_length = str(msg_length).encode(FORMAT)
-    send_length += b' ' * (HEADER - len(send_length))
-    client.send(send_length)
-    client.send(message)
-    received_msg = client.recv(2048).decode(FORMAT)
-    print(received_msg)
-    print(type(received_msg))
-    if received_msg == "Disconnected":
-        return False
-    #################################################
-    # RECEIVE PEER SET HANDLER
-    # TODO
-    #################################################
-    return True
+        # peer-tracker communication cmds: 
+        case "/connect_tracker":
+            connect_tracker()
+        case "/get_peer_set":
+            get_peer_set()
+        case "/update_status_to_tracker":
+            update_status_to_tracker()
+        case "/disconnect_tracker":
+            disconnect_tracker()
+        case "/quit_torrent":
+            quit_torrent()
 
-
-class Peer:
-    def __init__(self,peer_info={
-        "peer_id":"",
-        "ip":socket.gethostbyname(socket.gethostname()),
-        "port":PORT,
-        "downloaded":0,
-        "uploaded":0
-    },peer_data=None,seeder_lst=[],leecher_lst=[]):
-        self.peer_info=peer_info
-        self.peer_data=peer_data
-        self.seeder_lst=seeder_lst
-        self.leacher_lst=leecher_lst
-    # def request_tracker(self):
-    #     # request tracker to get seeder_lst
-    #     pass
-    # def request_download(self, tracker_url):
-    #     # request seeders in seeder_lst to download piece
-
-    #     # Prepare the request data
-    #     request_data = self.peer_info
-
-    #     # Send POST request to tracker with the request data
-    #     response = requests.post(tracker_url, json=request_data)
-
-    #     # Handle response
-    #     if response.status_code == 200:
-    #         print("Request sent successfully to tracker.")
-    #     else:
-    #         print("Failed to send request to tracker.")
-    #     # pass
-    # def upload_response(self):
-    #     # upload file to leachers in leecher_lst
-    #     pass
+        # peer-peer communication request cmds:
+        case "/connect_peer":# [target_peer_IP]
+            connect_peer(user_input_parts[1])
+        case "/request_download":# [target_peer_IP] [missing_chunk]
+            request_download(user_input_parts[1],user_input_parts[2])
+        case "/upload":# [request_peer_ip] [chunk_name]
+            upload(user_input_parts[1],user_input_parts[2])
+        case "/disconnect_peer":# [target_peer_IP]
+            disconnect_peer(user_input_parts[1])
+        
+        # peer functionality cmds:
+        case "/check_tracker_connected":
+            check_tracker_connected()
+        case "/check_target_peer_connected":# [target_peer_IP]
+            check_target_peer_connected(user_input_parts[1])
+        case "/check_chunk":# [chunk_name]
+            check_chunk(user_input_parts[1])
+        case "/see_peer_set":
+            see_peer_set()
+        case "/see_connected":
+            see_connected()
+        case "/see_current_chunks":
+            see_current_chunks()
+        case "/see_missing_chunks":
+            see_missing_chunks()
+        case "/merge_chunks":
+            merge_chunks()
+        case _:
+            pass
 
 
 if __name__ == "__main__":
-    connected = True
-    this_peer=Peer()
-    send(this_peer.peer_info)
-    while connected:
-        print(f"[{CLIENT},{PORT}] ",end='')  # Display client's IP address and port
-        connected = send(input())
+    chunk_directory = 'Memory'
+    save_chunks_to_peer(chunk_directory) # check file in [chunk_directory], then split file into chunks and save them to [chunk_directory]
+
+    # send(this_peer_info)
+    while running:
+        print(f"[{this_peer_info["ip"]},{this_peer_info["port"]}] ",end='')
+        user_input = input()
+        command_handler(user_input)
+
