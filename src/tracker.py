@@ -6,7 +6,7 @@ from bencode import bencode,bdecode
 
 
 HEADER = 1024
-PORT = 5050
+PORT = 7000
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER,PORT)
 FORMAT = 'utf-8'

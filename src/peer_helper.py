@@ -10,8 +10,8 @@ from bencode import bencode,bdecode
 # Constants
 HEADER = 1024
 FORMAT = 'utf-8'
-PORT=5050
-TRACKER_IP = "127.0.1.1" # get from torrent file
+PORT=7000
+TRACKER_IP = "192.168.1.181" # get from torrent file
 SERVER_ADDR = (TRACKER_IP, PORT)
 
 # Variables
@@ -51,7 +51,7 @@ chunk_directory="Memory"
 def connect_tracker(): # done
     global tracker_connected
     this_peer_socket.connect(SERVER_ADDR)                           # 1/ establish connection to tracker
-    this_peer_socket.send(bencode(this_peer_info))                  # 2/ send bencoded peer_info to tracker
+    this_peer_socket.send(bencode(this_peer_info).encode(FORMAT))                  # 2/ send bencoded peer_info to tracker
     received_msg = this_peer_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Tracker established connection to Peer[peer_ip]"
     print(received_msg)
     tracker_connected = True                                        # 4/ tracker_connected = True 
@@ -61,7 +61,7 @@ def get_peer_set(): # done
     global Peer_set
     if not check_tracker_connected():                               # 1/ run /check_tracker_connected. Go to step 2/ if returned True
         return
-    this_peer_socket.send(bencode("/get_peer_set"))                 # 2/ send "/get_peer_set" (string msg) to tracker.
+    this_peer_socket.send(bencode("/get_peer_set").encode(FORMAT))                 # 2/ send "/get_peer_set" (string msg) to tracker.
     received_msg = this_peer_socket.recv(2048).decode(FORMAT)       # 3/ tracker response bencoded tracker's PEER_SET (string)
     Peer_set=bdecode(received_msg)                                  # 4/ bdecode tracker response (list if dictionaries [{},{},{}] ) and update peer's PEER_SET
 
@@ -82,7 +82,7 @@ def quit_torrent(): # done
     global running
     if not check_tracker_connected():                               # 1/ run /check_tracker_connected. Run /connect_tracker then Go to step 2/ if returned False
         connect_tracker()
-    this_peer_socket.send(bencode("/quit_torrent"))                 # 2/ send bencoded "/quit_torrent" (string msg) to tracker 
+    this_peer_socket.send(bencode("/quit_torrent").encode(FORMAT))                 # 2/ send bencoded "/quit_torrent" (string msg) to tracker 
     received_msg = this_peer_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Peer[peer_id] quited torrent"
     print(received_msg)
     running=False                                                   # 4/ leave the torrent and won't upload/ download chunks (peer.py program stops running)
