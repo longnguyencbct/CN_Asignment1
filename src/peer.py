@@ -55,7 +55,9 @@ if __name__ == "__main__":
     save_chunks_to_peer(chunk_directory) # check file in [chunk_directory], then split file into chunks and save them to [chunk_directory]
 
     while running:
-        print(f"[{this_peer_info["ip"]},{this_peer_info["port"]}] ",end='')
+        peer_ip=this_peer_info["ip"]
+        peer_port=this_peer_info["port"]
+        print(f"[{peer_ip},{peer_port}] ",end='')
         user_input = input()
         command_handler(user_input)
 

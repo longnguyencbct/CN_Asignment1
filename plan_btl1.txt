@@ -3,30 +3,30 @@ README
 PEER(peer.py)
 
 - peer-tracker communication cmds: 
-	/connect_tracker: (ok) (done) (testing)
+	/connect_tracker: (ok) (done) (testing) (finished)
 		1/ Peer todo: establish connection to tracker 
 		2/ Peer todo: send bencoded peer_info to tracker
 		3/ Tracker response: "Tracker established connection to Peer[peer_ip]" (tracker runs a "listening peer cmds" while-loop thread)
 		4/ Peer todo: tracker_connected = True 
 		5/ run /get_peer_set
-	/get_peer_set: (ok) (done) (testing)
+	/get_peer_set: (ok) (done) (testing) (finished)
 		1/ run /check_tracker_connected. Go to step 2/ if returned True
 		2/ Peer todo: send "/get_peer_set" (string msg) to tracker.
 		3/ Tracker response: bencoded tracker's PEER_SET (string)
 		4/ Peer todo: bdecode tracker response (list if dictionaries [{},{},{}] ) and update peer's PEER_SET
-	/update_status_to_tracker: (ok)
+	/update_status_to_tracker: (ok) 
 		1/ run /check_tracker_connected. Go to step 2/ if returned True
 		2/ Peer todo: send "/update_status_to_tracker" [bencoded Peer_info] (string msg) to tracker
 		3/ Peer todo: send "[bencoded Peer_info]" (string msg) to tracker
 		4/ Tracker response: "Tracker updated Peer[peer_ip] status" (tracker updates peer set in tracker, but  other peers' PEER_SET will not update unless /get_peer_set is run)
 		5/ run /get_peer_set
-	/disconnect_tracker: (ok)
+	/disconnect_tracker: (ok) (done) (testing) (finished)
 		1/ run /check_tracker_connected. Go to step 2/ if returned True 
 		2/ Peer todo: send bencoded "/disconnect_tracker" (string msg) to tracker 
 		3/ Tracker response: "Peer[peer_id] disconnected from tracker"
 		4/ Peer todo: tracker_connected = False,
 		Note: peer disconnect from tracker but can still upload/download chunks to/from peers ( tracker stops "listening peer cmds" thread)
-	/quit_torrent: (ok)
+	/quit_torrent: (ok) (done) (testing)
 		1/ run /check_tracker_connected. Run /connect_tracker then Go to step 2/ if returned False
 		2/ Peer todo: # 2/ send bencoded "/quit_torrent" (string msg) to tracker 
 		3/ Tracker response: "Peer[peer_id] quited torrent"

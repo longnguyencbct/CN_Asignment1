@@ -17,25 +17,29 @@ server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(ADDR)
 
 
-def handle_peer_connection(conn, peer_ip):  # Run for each Peer connected
-    print(f"\n[NEW CONNECTION] {peer_ip} connected.")
+def handle_peer_connection(conn, tracker_ip):  # Run for each Peer connected
 
     # Receive peer information
-    peer_info_length = conn.recv(HEADER).decode(FORMAT)
-    peer_info_length = int(peer_info_length)
-    peer_info = bdecode(conn.recv(peer_info_length).decode(FORMAT))
+    # peer_info_length = conn.recv(HEADER).decode(FORMAT)
+    # peer_info_length = int(peer_info_length)
+    # peer_info = bdecode(conn.recv(peer_info_length).decode(FORMAT))
+
+    peer_info_msg=conn.recv(HEADER).decode(FORMAT)
+    peer_info=bdecode(peer_info_msg)
+    peer_ip=peer_info['ip']
+    print(f"\n[NEW CONNECTION] {peer_ip} connected.")
 
     conn.send(f"Tracker established connection to Peer[{peer_ip}]".encode(FORMAT)) # send to peer
 
     # Update Peer Set when new Peer connects
-    PEER_SET.append(peer_info)
+    if not peer_info in PEER_SET:
+        PEER_SET.append(peer_info)
 
     connected = True
     while connected:
-        msg_length = conn.recv(HEADER).decode(FORMAT)
-        if msg_length:
-            msg_length = int(msg_length)
-            msg = bdecode(conn.recv(msg_length).decode(FORMAT))
+        received_msg = conn.recv(HEADER).decode(FORMAT)
+        if received_msg:
+            msg = bdecode(received_msg)
             print(f"[{peer_ip}] {msg}")
 
             msg_parts=msg.split()
@@ -51,7 +55,7 @@ def handle_peer_connection(conn, peer_ip):  # Run for each Peer connected
                 case "/quit_torrent":
                     print(f"[PEER QUITED TORRENT] {peer_ip}")
                     conn.send(f"Peer[{peer_ip}] quited torrent".encode(FORMAT))  # send to peer
-                    PEER_SET.pop(peer_info)
+                    PEER_SET.remove(peer_info)
                     connected=False
                 case "/update_status":
                     print(f"[PEER UPDATE] {peer_ip}")
@@ -68,8 +72,8 @@ def start():
     server.listen()
     print(f"[LISTENING] Tracker is listening on {SERVER}")
     while True:
-        conn,peer_ip = server.accept() # detect a client connect
-        thread = threading.Thread(target=handle_peer_connection,args=(conn,peer_ip)) # create a "listening peer" thread
+        conn,tracker_ip = server.accept() # detect a client connect
+        thread = threading.Thread(target=handle_peer_connection,args=(conn,tracker_ip)) # create a "listening peer" thread
         thread.start()
         print(f"\n[ACTIVE CONNECTION] {threading.active_count()-1}")
         

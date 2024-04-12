@@ -24,7 +24,7 @@ Peer_set=[]
 missing_chunks = []
 curr_chunks=[]
 
-this_peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+this_peer_socket = None
 
 this_peer_info={
     # "peer_id": peer_id,
@@ -49,7 +49,8 @@ chunk_directory="Memory"
 # peer-tracker communication cmds: 
 
 def connect_tracker(): # done
-    global tracker_connected
+    global tracker_connected,this_peer_socket
+    this_peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     this_peer_socket.connect(SERVER_ADDR)                           # 1/ establish connection to tracker
     this_peer_socket.send(bencode(this_peer_info).encode(FORMAT))                  # 2/ send bencoded peer_info to tracker
     received_msg = this_peer_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Tracker established connection to Peer[peer_ip]"
@@ -69,24 +70,24 @@ def update_status_to_tracker():
     pass
 
 def disconnect_tracker(): # done
-    global tracker_connected
+    global tracker_connected,this_peer_socket
     if not check_tracker_connected():                               # 1/ run /check_tracker_connected. Go to step 2/ if returned True
         return
-    this_peer_socket.send(bencode("/disconnect_tracker"))           # 2/ send bencoded "/disconnect_tracker" (string msg) to tracker 
+    this_peer_socket.send(bencode("/disconnect_tracker").encode(FORMAT))           # 2/ send bencoded "/disconnect_tracker" (string msg) to tracker 
     received_msg = this_peer_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Peer[peer_id] disconnected from tracker"
     print(received_msg)
     this_peer_socket.close()
     tracker_connected = False                                       # 4/ tracker_connected = False
 
 def quit_torrent(): # done
-    global running
+    global running,tracker_connected,this_peer_socket
     if not check_tracker_connected():                               # 1/ run /check_tracker_connected. Run /connect_tracker then Go to step 2/ if returned False
         connect_tracker()
     this_peer_socket.send(bencode("/quit_torrent").encode(FORMAT))                 # 2/ send bencoded "/quit_torrent" (string msg) to tracker 
     received_msg = this_peer_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Peer[peer_id] quited torrent"
     print(received_msg)
     running=False                                                   # 4/ leave the torrent and won't upload/ download chunks (peer.py program stops running)
-    pass
+    this_peer_socket.close()
 
 
 # peer-peer communication request cmds:
@@ -190,4 +191,3 @@ def save_chunks_to_peer(chunk_directory): # check file in [chunk_directory], the
 ###########################################END##################################################
 #                                       OTHER FUNCTIONS                                        #
 ###########################################END##################################################
-
