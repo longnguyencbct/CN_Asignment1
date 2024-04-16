@@ -11,15 +11,14 @@ PEER(peer.py)
 		5/ run /get_peer_set
 	/get_peer_set: (ok) (done) (testing) (finished)
 		1/ run /check_tracker_connected. Go to step 2/ if returned True
-		2/ Peer todo: send "/get_peer_set" (string msg) to tracker.
+		2/ Peer todo: send bencoded "/get_peer_set" (string msg) to tracker.
 		3/ Tracker response: bencoded tracker's PEER_SET (string)
 		4/ Peer todo: bdecode tracker response (list if dictionaries [{},{},{}] ) and update peer's PEER_SET
-	/update_status_to_tracker: (ok) 
+	/update_status_to_tracker: (ok) (testing)
 		1/ run /check_tracker_connected. Go to step 2/ if returned True
-		2/ Peer todo: send "/update_status_to_tracker" [bencoded Peer_info] (string msg) to tracker
-		3/ Peer todo: send "[bencoded Peer_info]" (string msg) to tracker
-		4/ Tracker response: "Tracker updated Peer[peer_ip] status" (tracker updates peer set in tracker, but  other peers' PEER_SET will not update unless /get_peer_set is run)
-		5/ run /get_peer_set
+		2/ Peer todo: send bencoded "/update_status_to_tracker" [bencoded Peer_info] (string msg) to tracker
+		3/ Tracker response: "Tracker updated Peer[peer_ip] status" (tracker updates peer set in tracker, but  other peers' PEER_SET will not update unless /get_peer_set is run)
+		4/ run /get_peer_set
 	/disconnect_tracker: (ok) (done) (testing) (finished)
 		1/ run /check_tracker_connected. Go to step 2/ if returned True 
 		2/ Peer todo: send bencoded "/disconnect_tracker" (string msg) to tracker 
@@ -35,42 +34,47 @@ PEER(peer.py)
 
 
 - peer-peer communication request cmds:
-	/connect_peer [target_peer_IP]: (ok)
+	/connect_peer [target_peer_IP] [target_peer_port]: (ok) (done) (testing)
 		1/ establish connection to target peer
-		2/ Target peer response: "Peer[target_peer_ip] established connection to Peer[this_peer_ip]" (target peer runs a "listening peer cmds" while-loop thread)
-		3/ This peer todo: connected_peers[target_peer_IP]=True; 
-		Note: structure of connected_peers is a dictionary {"[target_peer_IP1]":True|False, "[target_peer_IP2]":True|False,...} (only peer ip from PEER_SET)
+		2/ Target peer response: "Peer[target_peer_ip,target_peer_port] established connection to Peer[this_peer_ip]" (target peer runs a "listening peer cmds" while-loop thread)
+		3/ This peer todo: connected_peers[target_peer_IP target_peer_port]=True; 
+		Note: structure of connected_peers is a dictionary {"[target_peer_IP1 target_peer_port1]":True|False, "[target_peer_IP2 target_peer_port2]":True|False,...} (only peer ip from PEER_SET)
 
-	/request_download [target_peer_IP] [missing_chunks[i]]: (ok)
-		1/ run /check_target_peer_connected [target_peer_IP]. Go to step 2/ if returned True 
-		2/ This peer todo: send "/request_download [target_peer_IP] [missing_chunks[i]]" (string msg) to [target_peer_IP].([missing_chunks[i]] is name of the chunk file)
-		3/ Target peer response: "Peer[target_peer_IP] starts uploading chunk [missing_chunks[i]] to Peer[this_peer_ip]" 
+	/request_download [target_peer_IP] [target_peer_port] [missing_chunks[i]]: (ok)
+		1/ run /check_target_peer_connected [target_peer_IP] [target_peer_port]. Go to step 2/ if returned True 
+		2/ This peer todo: send bencoded "/request_download [target_peer_IP] [target_peer_port] [missing_chunks[i]]" (string msg) to [target_peer_IP].([missing_chunks[i]] is name of the chunk file)
+		3/ Target peer response: "Peer[target_peer_IP target_peer_port] starts uploading chunk [missing_chunks[i]] to Peer[this_peer_ip]" 
 		4/ This peer todo: Save new chunk to Memory_peer folder
 
- 	/upload [request_peer_ip] [chunk_name]:
-		1/ run /check_target_peer_connected [target_peer_IP]. Go to step 2/ if returned True 
-		2/ run /check_chunk [chunk_namme]. Go to step 3/ if returned True. Else This peer todo: send "Peer[this_peer_ip] peer does not have [chunk_name]" (string msg) to [request_peer_ip] 
+ 	/upload [request_peer_ip] [target_peer_port] [chunk_name]:
 		3/ This peer todo: starts uploading
-		4/ This peer todo: send "Peer[this_peer_ip] uploaded [chunk name] to Peer[request_peer_ip]" (string msg) to [request_peer_ip].
+		4/ This peer todo: send "Peer[this_peer_ip,this_peer_port] uploaded [chunk name] to Peer[request_peer_ip,request_peer_port]" (string msg) to [request_peer_ip,request_peer_port].
 
 
-	/disconnect_peer [target_peer_IP]: 
-		1/ run /check_target_peer_connected [target_peer_IP]. Go to step 2/ if returned True
-		2/ This peer todo: send "/disconnect_peer [target_peer_IP]" to [target_peer_IP]
-		3/ Target peer response: "Peer[this_peer_id] disconnected from Peer[target_peer_ip]"
-		4/ This peer todo: connected_peers[target_peer_IP]=False
+	/disconnect_peer [target_peer_IP] [target_peer_port]: (ok) (done) (testing)
+		1/ run /check_target_peer_connected [target_peer_IP] [target_peer_port]. Go to step 2/ if returned True
+		2/ This peer todo: send bencoded "/disconnect_peer [target_peer_IP] [target_peer_port]" to [target_peer_IP,target_peer_port]
+		3/ Target peer response: "Peer[this_peer_id,this_peer_port] disconnected from Peer[target_peer_ip,target_peer_port]"
+		4/ This peer todo: connected_peers[target_peer_IP target_peer_port]=False
 
 - peer listening to other peers' cmds:
-	received peer connection request from [request_peer_ip]: (ok)
+	received peer connection request from [request_peer_ip]: (ok) (done) (testing)
 		1/ establish connection to [request_peer_ip]
 		2/ This peer todo: send "Peer[this_peer_ip] established connection to Peer[request_peer_ip]" (string msg) to [request_peer_ip]
 		3/ This peer todo: connected_peers[requested_peer_IP]=True; 
 		4/ This peer todo: Start a while-loop thread to listen to [requested_peer_IP]
-	received "/request_download":
-		1/ This peer todo: listen to the next string msg [missing_chunks[i]].
-		2/ This peer todo: /upload [request_peer_ip] [curr_chunks[i]] 
+	received "/request_download [target_peer_IP] [target_peer_port] [missing_chunks[i]]": (ok)
+		1/ run /check_target_peer_connected [target_peer_IP] [target_peer_port]. Go to step 2/ if returned True 
+		2/ run /check_chunk [chunk_name]. Go to step 3/ if returned True. Else This peer todo: send "Peer[this_peer_ip,this_peer_port] does not have [chunk_name]" (string msg) to [request_peer_ip,request_peer_port] 
+		3/ This peer todo: create a thread to run /upload [request_peer_ip] [curr_chunks[i]] 
+		4/ This peer todo: join thread after uploaded requested chunk
 
-	received "/disconnect_peer":
+	received "/disconnect_peer [request_peer_ip] [request_peer_port]": (ok) (done) (testing)
+		1/ This peer todo: check if input is valid
+		2/ This peer todo: send "Peer[this_peer_id,this_peer_port] disconnected from Peer[target_peer_ip,target_peer_port]"
+		3/ connected_peers[requested_peer_IP]=False
+		4/ This peer todo: close connection thread
+	
 
 - peer functionality cmds:
 	/check_tracker_connected:
@@ -95,9 +99,9 @@ PEER(peer.py)
 
 TRACKER(tracker.py)
 - tracker listening to connected peers:
-	respond to "/connect_tracker" (done) (testing)
+	respond to "/connect_tracker" (done) (testing) 
 	respond to "/get_peer_set" (done) (testing)
-	respond to "/update_status_to_tracker"
+	respond to "/update_status_to_tracker" (done) 
 	respond to "/disconnect_tracker" (done) (testing)
 	respond to "/quit_torrent" (done) (testing)
 - tracker functionality:

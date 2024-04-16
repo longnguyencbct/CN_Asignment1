@@ -20,13 +20,18 @@ def command_handler(user_input):
             quit_torrent()
 
         # peer-peer communication request cmds:
-        case "/connect_peer":# [target_peer_IP]
-            connect_peer(user_input_parts[1])
-        case "/request_download":# [target_peer_IP] [missing_chunk]
+        case "/connect_peer":# [target_peer_IP] [target_peer_port]
+            if(not user_input_parts[1] or not user_input_parts[2]):
+                print("Invalid format! Please provide both target peer IP and port.")
+            else:
+                connect_peer(user_input_parts[1],user_input_parts[2])
+        case "/request_download":# [target_peer_IP] [target_peer_port] [missing_chunk]
             request_download(user_input_parts[1],user_input_parts[2])
         case "/upload":# [request_peer_ip] [chunk_name]
             upload(user_input_parts[1],user_input_parts[2])
-        case "/disconnect_peer":# [target_peer_IP]
+        case "/disconnect_peer":# [target_peer_IP] [target_peer_port]
+            if(not user_input_parts[1] or not user_input_parts[2]):
+                print("Invalid format! Please provide both target peer IP and port.")
             disconnect_peer(user_input_parts[1])
         
         # peer functionality cmds:
@@ -49,15 +54,22 @@ def command_handler(user_input):
         case _:
             pass
 
-
-if __name__ == "__main__":
-    chunk_directory = 'Memory'
-    save_chunks_to_peer(chunk_directory) # check file in [chunk_directory], then split file into chunks and save them to [chunk_directory]
-
+def command_thread():
     while running:
         peer_ip=this_peer_info["ip"]
         peer_port=this_peer_info["port"]
         print(f"[{peer_ip},{peer_port}] ",end='')
         user_input = input()
         command_handler(user_input)
+
+
+if __name__ == "__main__":
+    command_thrd = threading.Thread(target=command_thread)
+    command_thrd.start()
+    while True:
+        conn,this_peer_ip = this_peer.accept() # detect a target peer connect
+        thread = threading.Thread(target=handle_request_peer_connection,args=(conn,this_peer_ip)) # create a "listening peer" thread
+        thread.start()
+        print(f"this_peer_ip??:{this_peer_ip}") # temp
+        print(f"[ACTIVE CONNECTION] {threading.active_count()-1}")
 

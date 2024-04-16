@@ -27,6 +27,7 @@ def handle_peer_connection(conn, tracker_ip):  # Run for each Peer connected
     peer_info_msg=conn.recv(HEADER).decode(FORMAT)
     peer_info=bdecode(peer_info_msg)
     peer_ip=peer_info['ip']
+    peer_port=peer_info['port']
     print(f"\n[NEW CONNECTION] {peer_ip} connected.")
 
     conn.send(f"Tracker established connection to Peer[{peer_ip}]".encode(FORMAT)) # send to peer
@@ -40,7 +41,7 @@ def handle_peer_connection(conn, tracker_ip):  # Run for each Peer connected
         received_msg = conn.recv(HEADER).decode(FORMAT)
         if received_msg:
             msg = bdecode(received_msg)
-            print(f"[{peer_ip}] {msg}")
+            print(f"[{peer_ip},{peer_port}] {msg}")
 
             msg_parts=msg.split()
             match msg_parts[0]:
@@ -75,7 +76,8 @@ def start():
         conn,tracker_ip = server.accept() # detect a client connect
         thread = threading.Thread(target=handle_peer_connection,args=(conn,tracker_ip)) # create a "listening peer" thread
         thread.start()
-        print(f"\n[ACTIVE CONNECTION] {threading.active_count()-1}")
+        print(f"tracker_ip??:{tracker_ip}") # temp
+        print(f"[ACTIVE CONNECTION] {threading.active_count()-1}")
         
 
 if __name__ == "__main__":
