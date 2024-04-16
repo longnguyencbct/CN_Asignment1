@@ -188,8 +188,11 @@ def handle_request_peer_connection(conn,this_peer_ip): # done
 
             msg_parts=msg.split()
             match msg_parts[0]:
-                case "/disconnect_peer": # done
+                case "/disconnect_peer":# [target_peer_IP] [target_peer_port] # done
                     # 1/ check if input is valid
+                    if (len(msg_parts)!=3):
+                        print("Invalid format! Please provide both request peer IP and port.")
+                        return
                     if(not msg_parts[1] or not msg_parts[2]):
                         print("Invalid format! Please provide both request peer IP and port.")
                     else:
