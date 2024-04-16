@@ -27,7 +27,7 @@ def command_handler(user_input):
             if(not user_input_parts[1] or not user_input_parts[2]):
                 print("Invalid format! Please provide both target peer IP and port.")
             else:
-                connect_peer(user_input_parts[1],user_input_parts[2])
+                connect_peer(user_input_parts[1],int(user_input_parts[2]))
         case "/request_download":# [target_peer_IP] [target_peer_port] [missing_chunk]
             if (len(user_input_parts)!=4):
                 print("Invalid format! Please provide both request peer IP and port.")
@@ -35,15 +35,15 @@ def command_handler(user_input):
             if(not user_input_parts[1] or not user_input_parts[2] or not user_input_parts[3]):
                 print("Invalid format! Please provide both target peer IP and port.")
             else:
-                request_download(user_input_parts[1],user_input_parts[2],user_input_parts[3])
-        case "/upload":# [request_peer_ip] [chunk_name]
-            if (len(user_input_parts)!=3):
-                print("Invalid format! Please provide both request peer IP and port.")
+                request_download(user_input_parts[1],int(user_input_parts[2]),user_input_parts[3])
+        case "/upload":# [request_peer_ip] [request_peer_port] [chunk_name]
+            if (len(user_input_parts)!=4):
+                print("Invalid format! Please provide both request peer IP and port and chunk name.")
                 return
-            if(not user_input_parts[1] or not user_input_parts[2]):
-                print("Invalid format! Please provide both target peer IP and port.")
+            if(not user_input_parts[1] or not user_input_parts[2] or not user_input_parts[3]):
+                print("Invalid format! Please provide both target peer IP and port and chunk name.")
             else:
-                upload(user_input_parts[1],user_input_parts[2])
+                upload(user_input_parts[1],int(user_input_parts[2]),user_input_parts[3])
         case "/disconnect_peer":# [target_peer_IP] [target_peer_port]
             if (len(user_input_parts)!=3):
                 print("Invalid format! Please provide both request peer IP and port.")
@@ -51,7 +51,7 @@ def command_handler(user_input):
             if(not user_input_parts[1] or not user_input_parts[2]):
                 print("Invalid format! Please provide both target peer IP and port.")
             else:
-                disconnect_peer(user_input_parts[1])
+                disconnect_peer(user_input_parts[1],int(user_input_parts[2]))
         
         # peer functionality cmds:
         case "/check_tracker_connected":
