@@ -107,7 +107,8 @@ def quit_torrent(): # done
 def connect_peer(target_peer_IP,target_peer_port): # done
     peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"] = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     target_peer_addr= (target_peer_IP,target_peer_port)
-    peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"].connect(target_peer_addr)                            # 1/ establish connection to target peer
+    peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"].connect(target_peer_addr) 
+    peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"].send(bencode(this_peer_info).encode(FORMAT))                           # 1/ establish connection to target peer
     received_msg = peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"].recv(2048).decode(FORMAT)           # 2/ Target peer response: "Peer[target_peer_ip,target_peer_port] established connection to Peer[this_peer_ip]"
     print(bdecode(received_msg))
     connected_peers[f"{target_peer_IP} {target_peer_port}"]=True; 
