@@ -49,7 +49,6 @@ chunk_directory="Memory"
 #                                   PEER'S GLOBAL VARIABLES                                    #
 ###########################################END##################################################
 
-
 ###########################################START################################################
 #                                   PEER COMMAND FUNCTIONS                                     #
 ###########################################START################################################
@@ -62,7 +61,7 @@ def connect_tracker(): # done
     this_peer_tracker_socket.connect(SERVER_ADDR)                           # 1/ establish connection to tracker
     this_peer_tracker_socket.send(bencode(this_peer_info).encode(FORMAT))                  # 2/ send bencoded peer_info to tracker
     received_msg = this_peer_tracker_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Tracker established connection to Peer[peer_ip]"
-    print(received_msg)
+    print(bdecode(received_msg))
     tracker_connected = True                                        # 4/ tracker_connected = True 
     get_peer_set()                                                  # 5/ run /get_peer_set
 
@@ -79,7 +78,7 @@ def update_status_to_tracker(): # done
         return
     this_peer_tracker_socket.send(bencode("/update_status_to_tracker"+" "+bencode(this_peer_info)).encode(FORMAT))                 # 2/ send "/update_status_to_tracker" [bencoded Peer_info] (string msg) to tracker
     received_msg = this_peer_tracker_socket.recv(2048).decode(FORMAT)       # 3/ Tracker response: "Tracker updated Peer[peer_ip] status"
-    print(received_msg)
+    print(bdecode(received_msg))
     get_peer_set()
 
 def disconnect_tracker(): # done
@@ -88,7 +87,7 @@ def disconnect_tracker(): # done
         return
     this_peer_tracker_socket.send(bencode("/disconnect_tracker").encode(FORMAT))           # 2/ send bencoded "/disconnect_tracker" (string msg) to tracker 
     received_msg = this_peer_tracker_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Peer[peer_id] disconnected from tracker"
-    print(received_msg)
+    print(bdecode(received_msg))
     this_peer_tracker_socket.close()
     tracker_connected = False                                       # 4/ tracker_connected = False
 
@@ -98,7 +97,7 @@ def quit_torrent(): # done
         connect_tracker()
     this_peer_tracker_socket.send(bencode("/quit_torrent").encode(FORMAT))                 # 2/ send bencoded "/quit_torrent" (string msg) to tracker 
     received_msg = this_peer_tracker_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Peer[peer_id] quited torrent"
-    print(received_msg)
+    print(bdecode(received_msg))
     running=False                                                   # 4/ leave the torrent and won't upload/ download chunks (peer.py program stops running)
     this_peer_tracker_socket.close()
 
@@ -110,7 +109,7 @@ def connect_peer(target_peer_IP,target_peer_port): # done
     target_peer_addr= (target_peer_IP,target_peer_port)
     peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"].connect(target_peer_addr)                            # 1/ establish connection to target peer
     received_msg = peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"].recv(2048).decode(FORMAT)           # 2/ Target peer response: "Peer[target_peer_ip,target_peer_port] established connection to Peer[this_peer_ip]"
-    print(received_msg)
+    print(bdecode(received_msg))
     connected_peers[f"{target_peer_IP} {target_peer_port}"]=True; 
     
 def request_download(target_peer_IP,missing_chunk):
@@ -124,7 +123,7 @@ def disconnect_peer(target_peer_IP,target_peer_port): # done
         return
     peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"].send(bencode(f"/disconnect_peer {target_peer_IP} {target_peer_port}").encode(FORMAT))  # 2/ send bencoded "/disconnect_peer [target_peer_IP] [target_peer_port]" to [target_peer_IP,target_peer_port]
     received_msg = peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"].recv(2048).decode(FORMAT)
-    print(received_msg)
+    print(bdecode(received_msg))
     del peer_peer_socket_dict[f"{target_peer_IP} {target_peer_port}"]
     connected_peers[f"{target_peer_IP} {target_peer_port}"]=False
 
@@ -167,7 +166,7 @@ def merge_chunks():
 #                                   PEER LISTENING FUNCTIONS                                   #
 ###########################################START################################################
 
-def handle_request_peer_connection(conn,this_peer_ip):
+def handle_request_peer_connection(conn,this_peer_ip): # done
 
     request_peer_info_msg=conn.recv(HEADER).decode(FORMAT)
     request_peer_info=bdecode(request_peer_info_msg)

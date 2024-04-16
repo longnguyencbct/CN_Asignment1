@@ -66,6 +66,7 @@ def command_thread():
 if __name__ == "__main__":
     command_thrd = threading.Thread(target=command_thread)
     command_thrd.start()
+    this_peer.listen()
     while True:
         conn,this_peer_ip = this_peer.accept() # detect a target peer connect
         thread = threading.Thread(target=handle_request_peer_connection,args=(conn,this_peer_ip)) # create a "listening peer" thread

@@ -6,7 +6,7 @@ from bencode import bencode,bdecode
 
 
 HEADER = 1024
-PORT = 7000
+PORT = 7001
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER,PORT)
 FORMAT = 'utf-8'
@@ -30,7 +30,7 @@ def handle_peer_connection(conn, tracker_ip):  # Run for each Peer connected
     peer_port=peer_info['port']
     print(f"\n[NEW CONNECTION] {peer_ip} connected.")
 
-    conn.send(f"Tracker established connection to Peer[{peer_ip}]".encode(FORMAT)) # send to peer
+    conn.send(bencode(f"Tracker established connection to Peer[{peer_ip},{peer_port}]").encode(FORMAT)) # send to peer
 
     # Update Peer Set when new Peer connects
     if not peer_info in PEER_SET:
@@ -50,22 +50,22 @@ def handle_peer_connection(conn, tracker_ip):  # Run for each Peer connected
                     conn.send(bencode(PEER_SET).encode(FORMAT))  # send PEER SET string
                     connected = True
                 case "/disconnect_tracker":
-                    print(f"[PEER DISCONNECTED TRACKER] {peer_ip}")
-                    conn.send(f"Peer[{peer_ip}] disconnected from tracker".encode(FORMAT))  # send to peer
+                    print(f"[PEER DISCONNECTED TRACKER] {peer_ip},{peer_port}")
+                    conn.send(bencode(f"Peer[{peer_ip},{peer_port}] disconnected from tracker").encode(FORMAT))  # send to peer
                     connected = False
                 case "/quit_torrent":
-                    print(f"[PEER QUITED TORRENT] {peer_ip}")
-                    conn.send(f"Peer[{peer_ip}] quited torrent".encode(FORMAT))  # send to peer
+                    print(f"[PEER QUITED TORRENT] {peer_ip},{peer_port}")
+                    conn.send(bencode(f"Peer[{peer_ip},{peer_port}] quited torrent").encode(FORMAT))  # send to peer
                     PEER_SET.remove(peer_info)
                     connected=False
                 case "/update_status":
-                    print(f"[PEER UPDATE] {peer_ip}")
+                    print(f"[PEER UPDATE] {peer_ip},{peer_port}")
                     ###########################################
                     # UPDATE PEER SET HERE
                     # TODO
                     ###########################################
                 case _:
-                    conn.send("Invalid command".encode(FORMAT))
+                    conn.send(bencode("Invalid command").encode(FORMAT))
     conn.close()
 
 
