@@ -1,4 +1,4 @@
-# import os
+import os
 #
 #
 # def split_file(input_file, chunk_size, output_dir):
@@ -32,3 +32,4 @@
 # chunk_size = 512 * 1024  # Chunk size in bytes, here 512KB
 # output_dir = r'C:\Users\ASUS\Desktop\HK232\MMT\BTL\BitTorrent\CN_Asignment1\src\Memory'
 # split_file(input_file, chunk_size, output_dir)
+

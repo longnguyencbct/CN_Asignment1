@@ -10,6 +10,8 @@ decimal_match = re.compile('\d')
 
 def bencode(value):
     return bencodepy.encode(value).decode()
+    #return bencodepy.encode(value)
+
 
 def bdecode(data):
     '''Main function to decode bencoded data'''
@@ -54,7 +56,7 @@ def _dechunk(chunks):
         for i in range(int(num)):
             line += chunks.pop()
         return line
-    raise "Invalid input!"
+    raise ValueError("Invalid input!")
 
 
 

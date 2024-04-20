@@ -1,5 +1,8 @@
 import os
 import socket
+
+from setuptools import command
+
 from bencode import bencode, bdecode
 import threading
 
@@ -32,7 +35,7 @@ peer_peer_socket_dict = {}
 this_peer_info = {
     # "peer_id": peer_id,
     "ip": socket.gethostbyname(socket.gethostname()),
-    "port": 5000,
+    "port": 5001,
     "downloaded": 0,
     "uploaded": 0
 }
@@ -41,7 +44,7 @@ peer_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 this_peer.bind((this_peer_info["ip"], this_peer_info["port"]))
 
 this_peer_data = {}
-chunk_directory = "Memory"
+chunk_directory = "New_Memory_for_peer"
 
 
 ###########################################END##################################################
@@ -128,13 +131,45 @@ def connect_peer(target_peer_IP, target_peer_port):  # done
     print(bdecode(received_msg))
     connected_peers[f"{target_peer_IP} {target_peer_port}"] = True;
 
-def send_file(client_socket, file_path):
-    with open(file_path, 'rb') as file:
-        data = file.read()
-        client_socket.sendall(data)
-def request_download(target_peer_IP, target_peer_port, missing_chunk):
-    pass
 
+# def request_download(target_peer_IP, target_peer_port, missing_chunk):
+#     if check_target_peer_connected(target_peer_IP, target_peer_port):
+#         file_name = missing_chunk
+#         peer_socket.connect((target_peer_IP,target_peer_port))
+#         peer_socket.sendall(command.encode(FORMAT))
+#
+#         file_path = os.path.join(chunk_directory, file_name)
+#         with open(file_path, 'wb') as file:
+#             while True:
+#                 data = peer_socket.recv(1024)
+#                 if not data:
+#                     break
+#                 file.write(data)
+#         peer_socket.close()
+def request_download(target_peer_IP, target_peer_port, missing_chunk):
+    if not check_target_peer_connected(target_peer_IP,
+                                       target_peer_port):  # 1/ run /check_tracker_connected. Go to step 2/ if returned True
+        return
+    file_name = missing_chunk
+    peer_socket.connect((target_peer_IP, target_peer_port))
+    #1.bencode
+    #2.encode
+
+    request = bencode(f"/request_download {target_peer_IP},{target_peer_port},{file_name}")
+    peer_socket.sendall(request.encode(FORMAT)) #2/ This peer todo: send bencoded "/request_download [target_peer_IP] [target_peer_port] [missing_chunks[i]]" (string msg) to [target_peer_IP].([missing_chunks[i]] is name of the chunk file)
+    download_msg = peer_socket.recv(HEADER).decode(FORMAT) #3/ Target peer response: "Peer[target_peer_IP target_peer_port] starts uploading chunk [missing_chunks[i]] to Peer[this_peer_ip]"
+
+    print(download_msg)
+
+    file_path = os.path.join(chunk_directory, file_name) #4 This peer todo: Save new chunk to Memory_peer folder
+    with open(file_path, 'wb') as file:
+        while True:
+            data = peer_socket.recv(1024)
+            if not data:
+                break
+            file.write(data)
+
+        peer_socket.close()
 
 
 def upload(request_peer_ip, chunk_name):
@@ -245,6 +280,11 @@ def merge_chunks():
 #                 case _:
 #                     conn.send(bencode("Invalid command").encode(FORMAT))
 #     conn.close()
+
+def send_file(client_socket, file_path):
+    with open(file_path, 'rb') as file:
+        data = file.read()
+        client_socket.sendall(data)
 def handle_request_peer_connection(conn, this_peer_ip):  # done
     request_peer_info_msg = conn.recv(HEADER).decode(FORMAT)
     print("Received message:", request_peer_info_msg)  # Add a print statement to show the received message
@@ -268,10 +308,7 @@ def handle_request_peer_connection(conn, this_peer_ip):  # done
         if received_msg:
             msg = bdecode(received_msg)
             print(f"[{request_peer_ip},{request_peer_port}] {msg}")
-#bencode: ma hoa
-#bdecode: giai ma
-#encode
-#decode
+
             msg_parts = msg.split()
             match msg_parts[0]:
                 case "/disconnect_peer":  # [target_peer_IP] [target_peer_port] # done
@@ -289,26 +326,12 @@ def handle_request_peer_connection(conn, this_peer_ip):  # done
                             FORMAT))
 
                         connected_peers[f"{request_peer_ip} {request_peer_port}"] = False  # 3/
-                case "/request_download":
-                    if (len(msg_parts) != 4):
-                        print("Invalid format! Please provide both request peer IP and port.")
-                        return
-                    if (not msg_parts[1] or not msg_parts[2] or not msg_parts[3]):
-                        print("Invalid format! Please provide both request peer IP and port.")
-                    else:
 
-                        file_path = os.path.join(chunk_directory, msg_parts[3])
-                        if os.path.exists(file_path):
-                            conn.send(bencode(
-                                f"Peer[{this_peer_info['ip']},{this_peer_info['port']}] starts uploading chunk {msg_parts[3]} to Peer[{request_peer_ip},{request_peer_port}]").encode(
-                                FORMAT))
-                            send_file(conn, file_path)
-                            print("File sent successfully!")
-                        else:
-                            print("File does not exist.")
                 case _:
                     conn.send(bencode("Invalid command").encode(FORMAT))
+
     conn.close()
+
 ###########################################END##################################################
 #                                   PEER LISTENING FUNCTIONS                                   #
 ###########################################END##################################################
