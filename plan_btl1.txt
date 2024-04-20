@@ -22,13 +22,13 @@ PEER(peer.py)
 	/disconnect_tracker: (ok) (done) (testing) (finished)
 		1/ run /check_tracker_connected. Go to step 2/ if returned True 
 		2/ Peer todo: send bencoded "/disconnect_tracker" (string msg) to tracker 
-		3/ Tracker response: "Peer[peer_id] disconnected from tracker"
+		3/ Tracker response: "Peer[peer_ip,peer_port] disconnected from tracker"
 		4/ Peer todo: tracker_connected = False,
 		Note: peer disconnect from tracker but can still upload/download chunks to/from peers ( tracker stops "listening peer cmds" thread)
 	/quit_torrent: (ok) (done) (testing)
-		1/ run /check_tracker_connected. Run /connect_tracker then Go to step 2/ if returned False
+		1/ run /check_tracker_connected. Run /connect_tracker if returned False
 		2/ Peer todo: # 2/ send bencoded "/quit_torrent" (string msg) to tracker 
-		3/ Tracker response: "Peer[peer_id] quited torrent"
+		3/ Tracker response: "Peer[peer_ip,peer_port] quited torrent"
 		4/ Peer todo: leave the torrent and won't upload/ download chunks (peer.py program stops running)
 
 
@@ -100,10 +100,26 @@ PEER(peer.py)
 TRACKER(tracker.py)
 - tracker listening to connected peers:
 	respond to "/connect_tracker" (done) (testing) 
+		1/ Tracker receive connection request from Peer[peer_ip,peer_port]
+		2/ Tracker todo: Establish a thread
+		3/ Tracker receive peer_info of Peer[peer_ip,peer_port]
+		4/ Tracker todo: send "Tracker established connection to Peer[peer_ip,peer_port]"  back to Peer[peer_ip,peer_port]
+		5/ Tracker todo: append peer_info into PEER_SET
+		6/ Tracker todo: connected = True
+		7/ Tracker todo: Run a while-loop listening peer's command in the thread
 	respond to "/get_peer_set" (done) (testing)
-	respond to "/update_status_to_tracker" (done) 
+		1/ Tracker todo: send bencoded PEER_SET to Peer[peer_ip,peer_port]
+	respond to "/update_status_to_tracker bencoded [peer_info]" 
+		1/ Tracker receive peer_info
+		2/ Tracker todo: Update peer_info in PEER_SET 
 	respond to "/disconnect_tracker" (done) (testing)
+		1/ Tracker todo: send "Peer[peer_ip,peer_port] disconnected from tracker"
+		2/ Tracker todo: connected = False
+		Note: the  while-loop  listening peer's command will stop when connected=False, and the thread will be joined
 	respond to "/quit_torrent" (done) (testing)
+		1/ Tracker todo: send "Peer[peer_ip,peer_port] quited torrent"
+		2/ Tracker todo: remove peer_info in PEER_SET
+		3/ Tracker todo: connected = False
 - tracker functionality:
 	
 		

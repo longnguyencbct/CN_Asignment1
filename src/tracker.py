@@ -49,6 +49,14 @@ def handle_peer_connection(conn, tracker_ip):  # Run for each Peer connected
                     print(f"[PEER SET] {PEER_SET}")
                     conn.send(bencode(PEER_SET).encode(FORMAT))  # send PEER SET string
                     connected = True
+                case "/update_status_to_tracker":
+                    print(f"[PEER UPDATE] {peer_ip},{peer_port}")
+                    received_peer_info=bdecode(msg_parts[1])
+                    update_peer_set(received_peer_info,PEER_SET)
+                    ###########################################
+                    # UPDATE PEER SET HERE
+                    # TODO
+                    ###########################################
                 case "/disconnect_tracker":
                     print(f"[PEER DISCONNECTED TRACKER] {peer_ip},{peer_port}")
                     conn.send(bencode(f"Peer[{peer_ip},{peer_port}] disconnected from tracker").encode(FORMAT))  # send to peer
@@ -58,15 +66,22 @@ def handle_peer_connection(conn, tracker_ip):  # Run for each Peer connected
                     conn.send(bencode(f"Peer[{peer_ip},{peer_port}] quited torrent").encode(FORMAT))  # send to peer
                     PEER_SET.remove(peer_info)
                     connected=False
-                case "/update_status":
-                    print(f"[PEER UPDATE] {peer_ip},{peer_port}")
-                    ###########################################
-                    # UPDATE PEER SET HERE
-                    # TODO
-                    ###########################################
                 case _:
                     conn.send(bencode("Invalid command").encode(FORMAT))
     conn.close()
+
+def update_peer_set(new_peer_info,peer_set):
+    for i in range(len(peer_set)):
+        peer_info=peer_set[i]
+        if new_peer_info["ip"] == peer_info["ip"] and new_peer_info["port"] == peer_info["port"]:
+            peer_set[i] = new_peer_info
+            break
+
+
+
+
+
+
 
 
 def start():

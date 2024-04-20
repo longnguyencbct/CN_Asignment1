@@ -25,9 +25,6 @@ connected_peers={}
 
 Peer_set=[]
 
-missing_chunks = []
-curr_chunks=[]
-
 this_peer_tracker_socket = None
 peer_peer_socket_dict={}
 
@@ -35,6 +32,7 @@ this_peer_info={
     # "peer_id": peer_id,
     "ip": socket.gethostbyname(socket.gethostname()),
     "port": 5000,
+    "chunk_status": {}, # {"filesplit_part1":True,"filesplit_part2":False,...} True=exist in memory; False=missing
     "downloaded": 0,
     "uploaded": 0
 }
@@ -113,11 +111,11 @@ def connect_peer(target_peer_IP,target_peer_port): # done
     print(bdecode(received_msg))
     connected_peers[f"{target_peer_IP} {target_peer_port}"]=True; 
     
-def request_download(target_peer_IP,missing_chunk):
-    pass
+def request_download(target_peer_ip,target_peer_port,missing_chunk):
+    this_peer_info["downloaded"]+=1
 
-def upload(request_peer_ip,chunk_name):
-    pass
+def upload(request_peer_ip,request_peer_port,chunk_name):
+    this_peer_info["uploaded"]+=1
 
 def disconnect_peer(target_peer_IP,target_peer_port): # done
     if not check_target_peer_connected(target_peer_IP,target_peer_port):                               # 1/ run /check_tracker_connected. Go to step 2/ if returned True
