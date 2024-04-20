@@ -53,10 +53,7 @@ def handle_peer_connection(conn, tracker_ip):  # Run for each Peer connected
                     print(f"[PEER UPDATE] {peer_ip},{peer_port}")
                     received_peer_info=bdecode(msg_parts[1])
                     update_peer_set(received_peer_info,PEER_SET)
-                    ###########################################
-                    # UPDATE PEER SET HERE
-                    # TODO
-                    ###########################################
+                    conn.send(bencode(f"Tracker updated Peer[{peer_ip},{peer_port}] status").encode(FORMAT))
                 case "/disconnect_tracker":
                     print(f"[PEER DISCONNECTED TRACKER] {peer_ip},{peer_port}")
                     conn.send(bencode(f"Peer[{peer_ip},{peer_port}] disconnected from tracker").encode(FORMAT))  # send to peer

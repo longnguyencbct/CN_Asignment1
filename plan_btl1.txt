@@ -112,6 +112,7 @@ TRACKER(tracker.py)
 	respond to "/update_status_to_tracker bencoded [peer_info]" 
 		1/ Tracker receive peer_info
 		2/ Tracker todo: Update peer_info in PEER_SET 
+		3/ Tracker todo: send "Tracker updated Peer[peer_ip,peer_port] status"
 	respond to "/disconnect_tracker" (done) (testing)
 		1/ Tracker todo: send "Peer[peer_ip,peer_port] disconnected from tracker"
 		2/ Tracker todo: connected = False
