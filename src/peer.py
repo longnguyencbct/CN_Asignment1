@@ -80,6 +80,8 @@ def command_thread():
         print(f"[{peer_ip},{peer_port}] ",end='')
         user_input = input()
         command_handler(user_input)
+        if(user_input=="/quit_torrent"):
+            break
 
 
 if __name__ == "__main__":

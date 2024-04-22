@@ -98,6 +98,7 @@ def quit_torrent(): # done
     print(bdecode(received_msg))
     running=False                                                   # 4/ leave the torrent and won't upload/ download chunks (peer.py program stops running)
     this_peer_tracker_socket.close()
+    
 
 
 # peer-peer communication request cmds:
