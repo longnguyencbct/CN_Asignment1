@@ -173,9 +173,9 @@ def merge_chunks():
 #                                   PEER LISTENING FUNCTIONS                                   #
 ###########################################START################################################
 
-def handle_request_peer_connection(conn): # done
-
-    request_peer_info_msg=conn.recv(HEADER).decode(FORMAT)
+def handle_request_peer_connection(request_peer_socket): # done
+    print("listener ran handle_request_peer_connection")
+    request_peer_info_msg=request_peer_socket.recv(HEADER).decode(FORMAT)
     request_peer_info=bdecode(request_peer_info_msg)
     this_peer_ip=this_peer_info["ip"]
     this_peer_port=this_peer_info["port"]
@@ -184,13 +184,13 @@ def handle_request_peer_connection(conn): # done
     print(f"\n[NEW CONNECTION] {request_peer_ip} connected.") # 1/ establish connection to [request_peer_ip]
 
     # 2/ send "Peer[this_peer_ip,this_peer_port] established connection to Peer[request_peer_ip,request_peer_port]" (string msg) to [request_peer_ip]
-    conn.send(bencode(f"Peer[{this_peer_ip},{this_peer_port}] established connection to Peer[{request_peer_ip},{request_peer_port}]").encode(FORMAT)) # send to peer
+    request_peer_socket.send(bencode(f"Peer[{this_peer_ip},{this_peer_port}] established connection to Peer[{request_peer_ip},{request_peer_port}]").encode(FORMAT)) # send to peer
     # 3/ connected_peers[requested_peer_IP]=True
     connected_peers[f"{request_peer_ip} {request_peer_port}"]=True
 
     # 4/ Start a while-loop thread to listen to [requested_peer_ip,request_peer_port]
     while connected_peers[f"{request_peer_ip} {request_peer_port}"]:
-        received_msg = conn.recv(HEADER).decode(FORMAT)
+        received_msg = request_peer_socket.recv(HEADER).decode(FORMAT)
         if received_msg:
             msg = bdecode(received_msg)
             print(f"Sender[{request_peer_ip},{request_peer_port}] {msg}")
@@ -207,11 +207,11 @@ def handle_request_peer_connection(conn): # done
                     else:
                         print(f"[REQUEST PEER DISCONNECTED THIS PEER] {msg_parts[1]}")
                         # 2/ send "Peer[this_peer_id,this_peer_port] disconnected from Peer[target_peer_ip,target_peer_port]"
-                        conn.send(bencode(f"Peer[{this_peer_ip},{this_peer_port}] disconnected from Peer[{msg_parts[1]},{msg_parts[2]}]").encode(FORMAT))  # send to peer
+                        request_peer_socket.send(bencode(f"Peer[{this_peer_ip},{this_peer_port}] disconnected from Peer[{msg_parts[1]},{msg_parts[2]}]").encode(FORMAT))  # send to peer
                         connected_peers[f"{request_peer_ip} {request_peer_port}"] = False # 3/
                 case _:
-                    conn.send(bencode("Invalid command").encode(FORMAT))
-    conn.close()
+                    request_peer_socket.send(bencode("Invalid command").encode(FORMAT))
+    request_peer_socket.close()
 
 ###########################################END##################################################
 #                                   PEER LISTENING FUNCTIONS                                   #
