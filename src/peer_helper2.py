@@ -33,13 +33,13 @@ Peer_set=[]
 this_peer_info={
     # "peer_id": peer_id,
     "ip": socket.gethostbyname(socket.gethostname()),
-    "listen_port": 7000, # used to listen to other peer's command
+    "listen_port": 7002, # used to listen to other peer's command
     "chunk_status": {}, # {"filesplit_part1":True,"filesplit_part2":False,...} True=exist in memory; False=missing
     "downloaded": 0,
     "uploaded": 0
 }
-send_tracker_port=5000 # used to send command to other peers or tracker
-send_peer_port=6000
+send_tracker_port=5002 # used to send command to other peers or tracker
+send_peer_port=6002
 
 this_peer_listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 this_peer_listening_socket.bind((this_peer_info["ip"], this_peer_info["listen_port"]))
@@ -129,7 +129,6 @@ def ping(target_peer_IP,target_peer_port):
     
 
 def request_download(target_peer_ip,target_peer_port,missing_chunk):
-    # TODO
     this_peer_info["downloaded"]+=1
 
 # def upload(request_peer_ip,request_peer_port,chunk_name):
@@ -221,9 +220,6 @@ def handle_request_peer_connection(this_request_handler_socket,request_peer_addr
                     else:
                         print(f"[PING RECEIVED] from Peer[{request_peer_ip},{request_peer_port}]")
                         this_request_handler_socket.send(bencode(f"Peer[{this_peer_ip},{this_peer_listen_port}] received ping from Peer[{request_peer_ip},{request_peer_port}]").encode(FORMAT))  # send to peer
-                case "/request_download":
-                    # TODO
-                    pass
                 case "/disconnect_peer":# [target_peer_IP] [target_peer_port] # done
                     # 1/ check if input is valid
                     if (len(msg_parts)!=3):
