@@ -1,5 +1,4 @@
 from peer_helper import *
-connected_peers={}
 
 def command_handler(user_input):
     global running, tracker_connected, connected_peers
@@ -36,14 +35,6 @@ def command_handler(user_input):
                 print("Invalid format! Please provide both target peer IP and port.")
             else:
                 request_download(user_input_parts[1],int(user_input_parts[2]),user_input_parts[3])
-        case "/upload":# [request_peer_ip] [request_peer_port] [chunk_name]
-            if (len(user_input_parts)!=4):
-                print("Invalid format! Please provide both request peer IP and port and chunk name.")
-                return
-            if(not user_input_parts[1] or not user_input_parts[2] or not user_input_parts[3]):
-                print("Invalid format! Please provide both target peer IP and port and chunk name.")
-            else:
-                upload(user_input_parts[1],int(user_input_parts[2]),user_input_parts[3])
         case "/disconnect_peer":# [target_peer_IP] [target_peer_port]
             if (len(user_input_parts)!=3):
                 print("Invalid format! Please provide both request peer IP and port.")
@@ -58,16 +49,16 @@ def command_handler(user_input):
             check_tracker_connected()
         case "/check_target_peer_connected":# [target_peer_IP]
             check_target_peer_connected(user_input_parts[1])
+        case "/see_this_peer_info":
+            see_this_peer_info()
         case "/check_chunk":# [chunk_name]
             check_chunk(user_input_parts[1])
         case "/see_peer_set":
             see_peer_set()
         case "/see_connected":
             see_connected()
-        case "/see_current_chunks":
-            see_current_chunks()
-        case "/see_missing_chunks":
-            see_missing_chunks()
+        case "/see_chunk_status":
+            see_chunk_status()
         case "/merge_chunks":
             merge_chunks()
         case _:
@@ -81,17 +72,18 @@ def command_thread():
         user_input = input()
         command_handler(user_input)
         if(user_input=="/quit_torrent"):
-            break
+            quit()
 
 
 if __name__ == "__main__":
+    peer_init()
     command_thrd = threading.Thread(target=command_thread)
     command_thrd.start()
-    this_peer.listen()
+    this_peer_listening_socket.listen()
     while running:
-        conn,this_peer_ip = this_peer.accept() # detect a target peer connect
-        thread = threading.Thread(target=handle_request_peer_connection,args=(conn,this_peer_ip)) # create a "listening peer" thread
+        target_peer_socket = this_peer_listening_socket.accept() # detect a target peer connect
+        thread = threading.Thread(target=handle_request_peer_connection,args=(target_peer_socket)) # create a "listening peer" thread
         thread.start()
-        print(f"this_peer_ip??:{this_peer_ip}") # temp
         print(f"[ACTIVE CONNECTION] {threading.active_count()-1}")
+    
 

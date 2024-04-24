@@ -2,6 +2,7 @@ import os
 import socket
 from bencode import bencode,bdecode
 import threading
+import json
 #from split_file import *
 
 ###########################################START################################################
@@ -11,16 +12,19 @@ import threading
 # Constants
 HEADER = 1024
 FORMAT = 'utf-8'
-TRACKER_PORT=7001
-TRACKER_IP = "192.168.1.181" # get from torrent file
-SERVER_ADDR = (TRACKER_IP, TRACKER_PORT)
-
-
+TRACKER_PORT=0
+TRACKER_IP = "" # get from torrent file
+CHUNK_SIZE = 0
+TRACKER_ADDR = None
+TORRENT_STRUCTURE={}
+MEMORY_DIR="Memory"
+TORRENT_FILE="torrent_file"
 
 # Variables
 running=True
 tracker_connected=False
 connected_peers={}
+
 
 
 Peer_set=[]
@@ -36,12 +40,10 @@ this_peer_info={
     "downloaded": 0,
     "uploaded": 0
 }
-this_peer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-this_peer.bind((this_peer_info["ip"], this_peer_info["port"]))
+this_peer_listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+this_peer_listening_socket.bind((this_peer_info["ip"], this_peer_info["port"]))
 
 
-this_peer_data={}
-chunk_directory="Memory"
 
 ###########################################END##################################################
 #                                   PEER'S GLOBAL VARIABLES                                    #
@@ -56,7 +58,7 @@ chunk_directory="Memory"
 def connect_tracker(): # done
     global tracker_connected,this_peer_tracker_socket
     this_peer_tracker_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    this_peer_tracker_socket.connect(SERVER_ADDR)                           # 1/ establish connection to tracker
+    this_peer_tracker_socket.connect(TRACKER_ADDR)                           # 1/ establish connection to tracker
     this_peer_tracker_socket.send(bencode(this_peer_info).encode(FORMAT))                  # 2/ send bencoded peer_info to tracker
     received_msg = this_peer_tracker_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Tracker established connection to Peer[peer_ip]"
     print(bdecode(received_msg))
@@ -115,8 +117,8 @@ def connect_peer(target_peer_IP,target_peer_port): # done
 def request_download(target_peer_ip,target_peer_port,missing_chunk):
     this_peer_info["downloaded"]+=1
 
-def upload(request_peer_ip,request_peer_port,chunk_name):
-    this_peer_info["uploaded"]+=1
+# def upload(request_peer_ip,request_peer_port,chunk_name):
+#     this_peer_info["uploaded"]+=1
 
 def disconnect_peer(target_peer_IP,target_peer_port): # done
     if not check_target_peer_connected(target_peer_IP,target_peer_port):                               # 1/ run /check_tracker_connected. Go to step 2/ if returned True
@@ -140,20 +142,25 @@ def check_target_peer_connected(target_peer_IP,target_peer_port): #done
         print(f"Target Peer[{target_peer_IP},{target_peer_port}] is not connected to current Peer[{this_peer_info['ip']} {this_peer_info['port']}]")
     return connected_peers[f"{target_peer_IP} {target_peer_port}"]
 
+def see_this_peer_info():
+    print_dict(this_peer_info)
+
 def check_chunk(chunk_name):
     pass
 
 def see_peer_set(): # done
-    print(Peer_set) # 1/ print Peer_set
+    for peer in Peer_set:
+        print("==========================================")
+        print_dict(peer) # 1/ print Peer_set
+        print("==========================================")
 
 def see_connected(): # done
     print(connected_peers)
 
-def see_current_chunks():
-    pass
-
-def see_missing_chunks():
-    pass
+def see_chunk_status():
+    print("==================================")
+    print_dict(this_peer_info["chunk_status"])
+    print("==================================")
 
 def merge_chunks():
     pass
@@ -166,16 +173,18 @@ def merge_chunks():
 #                                   PEER LISTENING FUNCTIONS                                   #
 ###########################################START################################################
 
-def handle_request_peer_connection(conn,this_peer_ip): # done
+def handle_request_peer_connection(conn): # done
 
     request_peer_info_msg=conn.recv(HEADER).decode(FORMAT)
     request_peer_info=bdecode(request_peer_info_msg)
+    this_peer_ip=this_peer_info["ip"]
+    this_peer_port=this_peer_info["port"]
     request_peer_ip=request_peer_info['ip']
     request_peer_port=request_peer_info['port']
     print(f"\n[NEW CONNECTION] {request_peer_ip} connected.") # 1/ establish connection to [request_peer_ip]
 
     # 2/ send "Peer[this_peer_ip,this_peer_port] established connection to Peer[request_peer_ip,request_peer_port]" (string msg) to [request_peer_ip]
-    conn.send(bencode(f"Peer[{this_peer_info["ip"]},{this_peer_info["port"]}] established connection to Peer[{request_peer_ip},{request_peer_port}]").encode(FORMAT)) # send to peer
+    conn.send(bencode(f"Peer[{this_peer_ip},{this_peer_port}] established connection to Peer[{request_peer_ip},{request_peer_port}]").encode(FORMAT)) # send to peer
     # 3/ connected_peers[requested_peer_IP]=True
     connected_peers[f"{request_peer_ip} {request_peer_port}"]=True
 
@@ -184,7 +193,7 @@ def handle_request_peer_connection(conn,this_peer_ip): # done
         received_msg = conn.recv(HEADER).decode(FORMAT)
         if received_msg:
             msg = bdecode(received_msg)
-            print(f"[{request_peer_ip},{request_peer_port}] {msg}")
+            print(f"Sender[{request_peer_ip},{request_peer_port}] {msg}")
 
             msg_parts=msg.split()
             match msg_parts[0]:
@@ -198,66 +207,91 @@ def handle_request_peer_connection(conn,this_peer_ip): # done
                     else:
                         print(f"[REQUEST PEER DISCONNECTED THIS PEER] {msg_parts[1]}")
                         # 2/ send "Peer[this_peer_id,this_peer_port] disconnected from Peer[target_peer_ip,target_peer_port]"
-                        conn.send(bencode(f"Peer[{this_peer_info["ip"]},{this_peer_info["port"]}] disconnected from Peer[{msg_parts[1]},{msg_parts[2]}]").encode(FORMAT))  # send to peer
+                        conn.send(bencode(f"Peer[{this_peer_ip},{this_peer_port}] disconnected from Peer[{msg_parts[1]},{msg_parts[2]}]").encode(FORMAT))  # send to peer
                         connected_peers[f"{request_peer_ip} {request_peer_port}"] = False # 3/
                 case _:
                     conn.send(bencode("Invalid command").encode(FORMAT))
     conn.close()
-
 
 ###########################################END##################################################
 #                                   PEER LISTENING FUNCTIONS                                   #
 ###########################################END##################################################
 
 ###########################################START################################################
+#                                       PEER INIT FUNCTION                                     #
+###########################################START################################################
+
+def peer_init():
+    global TRACKER_IP, TRACKER_PORT, CHUNK_SIZE, TORRENT_STRUCTURE
+    TRACKER_IP, TRACKER_PORT, CHUNK_SIZE = read_torrent_file_part1()
+    TORRENT_STRUCTURE = read_torrent_file_part2()  # Move this line here
+    this_peer_info["chunk_status"] = update_chunk_status()
+    see_chunk_status()
+
+###########################################END##################################################
+#                                       PEER INIT FUNCTION                                     #
+###########################################END##################################################
+
+###########################################START################################################
 #                                       OTHER FUNCTIONS                                        #
 ###########################################START################################################
 
-# def save_chunk(chunk_number, chunk_data):
-#     this_peer_data[chunk_number] = chunk_data
+def read_torrent_file_part1():
+    global TRACKER_ADDR
+    torrent_file=TORRENT_FILE
+    memory_dir=MEMORY_DIR
+    # Construct the full path to the torrent file
+    torrent_file_path = os.path.join(memory_dir, torrent_file)
 
-# def get_chunk(chunk_number):
-#     return this_peer_data.get(chunk_number, None)
+    # Read the first three lines of the torrent file
+    with open(torrent_file_path, 'r') as file:
+        lines = file.readlines()[:3]
 
-# def set_chunk_directory(chunk_directory):
-#     chunk_directory = chunk_directory
+        # Extract tracker_ip, tracker_port, and chunk_size
+        tracker_ip = lines[0].strip()
+        tracker_port = int(lines[1].strip())
+        chunk_size = int(lines[2].strip())
+    TRACKER_ADDR=(tracker_ip,tracker_port)
+    # Return the extracted values
+    return tracker_ip, tracker_port, chunk_size
 
-# def send(msg,target_ip):
-#     message = bencode(msg).encode(FORMAT)
-#     msg_length = len(message)
-#     send_length = str(msg_length).encode(FORMAT)
-#     send_length += b' ' * (HEADER - len(send_length))
-#     this_peer_socket.send(send_length)
-#     this_peer_socket.send(message)
+def read_torrent_file_part2():
+    torrent_file=TORRENT_FILE
+    memory_dir=MEMORY_DIR
+    # Construct the full path to the torrent file
+    torrent_file_path = os.path.join(memory_dir, torrent_file)
 
-#     # chunk_dir_length = len(chunk_directory)
-#     # peer_socket.send(str(chunk_dir_length).encode(FORMAT))
-#     # peer_socket.send(chunk_directory.encode(FORMAT))
+    # Read the JSON data from the torrent file starting from line 4
+    with open(torrent_file_path, 'r') as file:
+        # Skip the first three lines
+        for _ in range(3):
+            next(file)
+        # Load the JSON data
+        torrent_structure = json.load(file)
 
+    # Return the torrent structure dictionary
+    return torrent_structure
 
-#     received_msg = this_peer_socket.recv(2048).decode(FORMAT)
-#     print(received_msg)
-#     print(type(received_msg))
-#     if received_msg == "Disconnected":
-#         return False
-#     #################################################
-#     # RECEIVE PEER SET HANDLER
-#     # TODO
-#     #################################################
-#     return True
+def init_chunk_status():
+    torrent_structure=TORRENT_STRUCTURE
+    chunk_status={}
+    for file_name in torrent_structure:
+        for chunk_name in torrent_structure[file_name]:
+            chunk_status[chunk_name]=0
+    return chunk_status
 
-# def save_chunks_to_peer(chunk_directory): # check file in [chunk_directory], then split file into chunks and save them to [chunk_directory]
-#     saved_chunks = 0  # Initialize counter for saved chunks
-#     for filename in os.listdir(chunk_directory):
-#         if filename.startswith('File_split.mp4.part'):  # Check if the file is a chunk
-#             chunk_number = int(filename.split('part')[1])  # Extract chunk number from filename
-#             file_path = os.path.join(chunk_directory, filename)
-#             with open(file_path, 'rb') as f:
-#                 chunk_data = f.read()  # Read chunk data
-#                 save_chunk(chunk_number, chunk_data)  # Save chunk to peer_data
-#                 saved_chunks += 1  # Increment the counter for saved chunks
-#     if saved_chunks == 70:
-#         print("All 70 chunks have been successfully saved.")
+def update_chunk_status():
+    memory_dir=MEMORY_DIR
+    chunk_status=init_chunk_status()
+    for filename in os.listdir(memory_dir):
+        filepath = os.path.join(memory_dir, filename)
+        if os.path.isfile(filepath) and filename in chunk_status:  # 512kb in bytes
+            chunk_status[filename]=1
+    return chunk_status
+
+def print_dict(dictionary):
+    for key in dictionary:
+        print(f"{key}: {dictionary[key]}")
 
 ###########################################END##################################################
 #                                       OTHER FUNCTIONS                                        #
