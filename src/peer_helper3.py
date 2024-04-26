@@ -17,7 +17,7 @@ TRACKER_IP = "" # get from torrent file
 CHUNK_SIZE = 0
 TRACKER_ADDR = None
 TORRENT_STRUCTURE={}
-MEMORY_DIR="Memory2"
+MEMORY_DIR="Memory3"
 TORRENT_FILE="torrent_file"
 
 # Variables
@@ -33,13 +33,13 @@ Peer_set=[]
 this_peer_info={
     # "peer_id": peer_id,
     "ip": socket.gethostbyname(socket.gethostname()),
-    "listen_port": 7002, # used to listen to other peer's command
+    "listen_port": 7003, # used to listen to other peer's command
     "chunk_status": {}, # {"filesplit_part1":True,"filesplit_part2":False,...} True=exist in memory; False=missing
     "downloaded": 0,
     "uploaded": 0
 }
-send_tracker_port=5002 # used to send command to other peers or tracker
-send_peer_port=6002
+send_tracker_port=5003 # used to send command to other peers or tracker
+send_peer_port=6003
 
 listening_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 listening_socket.bind((this_peer_info["ip"], this_peer_info["listen_port"]))

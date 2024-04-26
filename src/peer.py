@@ -56,19 +56,31 @@ def command_handler(user_input):
         case "/check_tracker_connected":
             check_tracker_connected()
         case "/check_target_peer_connected":# [target_peer_IP]
-            check_target_peer_connected(user_input_parts[1])
+            if (len(user_input_parts)!=3):
+                print("Invalid format! Please provide both request peer IP and port.")
+                return
+            if(not user_input_parts[1] or not user_input_parts[2]):
+                print("Invalid format! Please provide both target peer IP and port.")
+            else:
+                check_target_peer_connected(user_input_parts[1],user_input_parts[2])
         case "/see_this_peer_info":
             see_this_peer_info()
-        case "/check_chunk":# [chunk_name]
-            check_chunk(user_input_parts[1])
         case "/see_peer_set":
             see_peer_set()
         case "/see_connected":
             see_connected()
+        case "/see_torrent_struct":
+            see_torrent_struct()
         case "/see_chunk_status":
             see_chunk_status()
         case "/merge_chunks":
-            merge_chunks()
+            if (len(user_input_parts)!=2):
+                print("Invalid format! Please provide file name.")
+                return
+            if(not user_input_parts[1]):
+                print("Invalid format! Please provide file name.")
+            else:
+                merge_chunks(user_input_parts[1])
         case _:
             pass
 
@@ -87,9 +99,9 @@ if __name__ == "__main__":
     peer_init()
     command_thrd = threading.Thread(target=command_thread)
     command_thrd.start()
-    this_peer_listening_socket.listen()
+    listening_socket.listen()
     while running:
-        request_handler_socket,request_peer_addr = this_peer_listening_socket.accept() # detect a target peer connect
+        request_handler_socket,request_peer_addr = listening_socket.accept() # detect a target peer connect
         thread = threading.Thread(target=handle_request_peer_connection,args=(request_handler_socket,request_peer_addr)) # create a "listening peer" thread
         thread.start()
         print(f"[ACTIVE CONNECTION] {threading.active_count()-1}")
