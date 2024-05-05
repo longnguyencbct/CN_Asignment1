@@ -27,3 +27,4 @@ def split_file(file_name):
 if __name__ == "__main__":
     split_file("file1.webm")
     split_file("file2.webm")
+    split_file("sus_file.mp4")

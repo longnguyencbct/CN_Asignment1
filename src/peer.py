@@ -63,6 +63,8 @@ def command_handler(user_input):
                 print("Invalid format! Please provide both target peer IP and port.")
             else:
                 check_target_peer_connected(user_input_parts[1],user_input_parts[2])
+        case "/auto_download":
+            auto_download()
         case "/see_this_peer_info":
             see_this_peer_info()
         case "/see_peer_set":
@@ -81,6 +83,8 @@ def command_handler(user_input):
                 print("Invalid format! Please provide file name.")
             else:
                 merge_chunks(user_input_parts[1])
+        case "/merge_all":
+            merge_all()
         case _:
             pass
 
@@ -104,6 +108,5 @@ if __name__ == "__main__":
         request_handler_socket,request_peer_addr = listening_socket.accept() # detect a target peer connect
         thread = threading.Thread(target=handle_request_peer_connection,args=(request_handler_socket,request_peer_addr)) # create a "listening peer" thread
         thread.start()
-        print(f"[ACTIVE CONNECTION] {threading.active_count()-1}")
     
 

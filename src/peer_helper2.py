@@ -3,6 +3,7 @@ import socket
 from bencode import bencode,bdecode
 import threading
 import json
+import time
 #from split_file import *
 
 ###########################################START################################################
@@ -10,7 +11,7 @@ import json
 ###########################################START################################################
 
 # Constants
-HEADER = 1024
+HEADER = 512*1024
 FORMAT = 'utf-8'
 TRACKER_PORT=0
 TRACKER_IP = "" # get from torrent file
@@ -69,7 +70,7 @@ def connect_tracker(): # done
     global tracker_connected
     send_tracker_socket.connect(TRACKER_ADDR)                           # 1/ establish connection to tracker
     send_tracker_socket.send(bencode(this_peer_info).encode(FORMAT))                  # 2/ send bencoded peer_info to tracker
-    received_msg = send_tracker_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Tracker established connection to Peer[peer_ip]"
+    received_msg = send_tracker_socket.recv(HEADER).decode(FORMAT)       # 3/ tracker response "Tracker established connection to Peer[peer_ip]"
     print(bdecode(received_msg))
     tracker_connected = True                                        # 4/ tracker_connected = True 
     get_peer_set()                                                  # 5/ run /get_peer_set
@@ -79,14 +80,14 @@ def get_peer_set(): # done
     if not check_tracker_connected():                               # 1/ run /check_tracker_connected. Go to step 2/ if returned True
         return
     send_tracker_socket.send(bencode("/get_peer_set").encode(FORMAT))                 # 2/ send "/get_peer_set" (string msg) to tracker.
-    received_msg = send_tracker_socket.recv(2048).decode(FORMAT)       # 3/ tracker response bencoded tracker's PEER_SET (string)
+    received_msg = send_tracker_socket.recv(HEADER).decode(FORMAT)       # 3/ tracker response bencoded tracker's PEER_SET (string)
     Peer_set=bdecode(received_msg)                                  # 4/ bdecode tracker response (list if dictionaries [{},{},{}] ) and update peer's PEER_SET
 
 def update_status_to_tracker(): # done
     if not check_tracker_connected():                               # 1/ run /check_tracker_connected. Go to step 2/ if returned True
-        return
+        connect_tracker()
     send_tracker_socket.send(bencode("/update_status_to_tracker"+" "+bencode(this_peer_info)).encode(FORMAT))                 # 2/ send "/update_status_to_tracker" [bencoded Peer_info] (string msg) to tracker
-    received_msg = send_tracker_socket.recv(2048).decode(FORMAT)       # 3/ Tracker response: "Tracker updated Peer[peer_ip] status"
+    received_msg = send_tracker_socket.recv(HEADER).decode(FORMAT)       # 3/ Tracker response: "Tracker updated Peer[peer_ip] status"
     print(bdecode(received_msg))
     get_peer_set()
 
@@ -95,7 +96,7 @@ def disconnect_tracker(): # done
     if not check_tracker_connected():                               # 1/ run /check_tracker_connected. Go to step 2/ if returned True
         return
     send_tracker_socket.send(bencode("/disconnect_tracker").encode(FORMAT))           # 2/ send bencoded "/disconnect_tracker" (string msg) to tracker 
-    received_msg = send_tracker_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Peer[peer_id] disconnected from tracker"
+    received_msg = send_tracker_socket.recv(HEADER).decode(FORMAT)       # 3/ tracker response "Peer[peer_id] disconnected from tracker"
     print(bdecode(received_msg))
     send_tracker_socket.close()
     tracker_connected = False                                       # 4/ tracker_connected = False
@@ -105,7 +106,7 @@ def quit_torrent(): # done
     if not check_tracker_connected():                               # 1/ run /check_tracker_connected. Run /connect_tracker then Go to step 2/ if returned False
         connect_tracker()
     send_tracker_socket.send(bencode("/quit_torrent").encode(FORMAT))                 # 2/ send bencoded "/quit_torrent" (string msg) to tracker 
-    received_msg = send_tracker_socket.recv(2048).decode(FORMAT)       # 3/ tracker response "Peer[peer_id] quited torrent"
+    received_msg = send_tracker_socket.recv(HEADER).decode(FORMAT)       # 3/ tracker response "Peer[peer_id] quited torrent"
     print(bdecode(received_msg))
     running=False                                                   # 4/ leave the torrent and won't upload/ download chunks (peer.py program stops running)
     send_tracker_socket.close()
@@ -123,7 +124,7 @@ def connect_peer(target_peer_IP,target_peer_port): # done
     current_request_sender_socket.connect(target_peer_addr) 
     ################################################################
     current_request_sender_socket.send(bencode(this_peer_info).encode(FORMAT))                           # 1/ establish connection to target peer
-    received_msg = current_request_sender_socket.recv(2048).decode(FORMAT)           # 2/ Target peer response: "Peer[target_peer_ip,target_peer_port] established connection to Peer[this_peer_ip]"
+    received_msg = current_request_sender_socket.recv(HEADER).decode(FORMAT)           # 2/ Target peer response: "Peer[target_peer_ip,target_peer_port] established connection to Peer[this_peer_ip]"
     print(bdecode(received_msg))
     connected_peers[f"{target_peer_IP} {target_peer_port}"]=True; 
     
@@ -132,7 +133,7 @@ def ping(target_peer_IP,target_peer_port):
         return
     current_request_sender_socket=request_sender_socket[f"{target_peer_IP} {target_peer_port}"]
     current_request_sender_socket.send(bencode(f"/ping {target_peer_IP} {target_peer_port}").encode(FORMAT))  # 2/ send bencoded "/ping [target_peer_IP] [target_peer_port]" to [target_peer_IP,target_peer_port]
-    received_msg = current_request_sender_socket.recv(2048).decode(FORMAT)
+    received_msg = current_request_sender_socket.recv(HEADER).decode(FORMAT)
     print(bdecode(received_msg))
     
 
@@ -141,16 +142,17 @@ def request_download(target_peer_ip,target_peer_port,missing_chunk):
         return
     current_request_sender_socket=request_sender_socket[f"{target_peer_ip} {target_peer_port}"]
     current_request_sender_socket.send(bencode(f"/request_download {target_peer_ip} {target_peer_port} {missing_chunk}").encode(FORMAT))  # 2/ send bencoded "/request_download [target_peer_IP] [target_peer_port] [missing_chunk]" to [target_peer_IP,target_peer_port]
-    received_msg = bdecode(current_request_sender_socket.recv(2048).decode(FORMAT))
+    received_msg = bdecode(current_request_sender_socket.recv(HEADER).decode(FORMAT))
     print(received_msg)
     if received_msg!=f"File {missing_chunk} not found!":
         file_path = os.path.join(MEMORY_DIR, missing_chunk) 
         with open(file_path, 'wb') as file:
-            data = current_request_sender_socket.recv(1024*1024) # recieve chunks from server
+            data = current_request_sender_socket.recv(HEADER) # recieve chunks from server
             file.write(data)
         print("File received successfully!")
         this_peer_info["downloaded"]+=1
         this_peer_info["chunk_status"]=update_chunk_status()
+        update_status_to_tracker()
     else:
         print("failed to request download!")
     
@@ -160,9 +162,31 @@ def disconnect_peer(target_peer_IP,target_peer_port): # done
         return
     current_request_sender_socket=request_sender_socket[f"{target_peer_IP} {target_peer_port}"]
     current_request_sender_socket.send(bencode(f"/disconnect_peer {target_peer_IP} {target_peer_port}").encode(FORMAT))  # 2/ send bencoded "/disconnect_peer [target_peer_IP] [target_peer_port]" to [target_peer_IP,target_peer_port]
-    received_msg = current_request_sender_socket.recv(2048).decode(FORMAT)
+    received_msg = current_request_sender_socket.recv(HEADER).decode(FORMAT)
     print(bdecode(received_msg))
     connected_peers[f"{target_peer_IP} {target_peer_port}"]=False
+
+def auto_download():
+    if not tracker_connected: connect_tracker()
+    count=0
+    while not is_enough_chunk() and count < 5:
+        print("==========Start downloading missing chunks==========")
+        chunk_status=this_peer_info["chunk_status"]
+        for file_name in chunk_status:
+            if chunk_status[file_name]==0:
+                target_peer=pick_peer_to_download(file_name)
+                if target_peer == None :
+                    print(f"Torrent don't have any peer that has {file_name}")
+                    continue
+                connect_peer(target_peer["ip"],target_peer["listen_port"])
+                request_download(target_peer["ip"],target_peer["listen_port"],file_name)
+                time.sleep(0.5)
+        count+=1
+    if count >=5:
+        print("Failed to find enough peers to download all the chunks.")
+        return
+    print("All chunks have been downloaded") 
+    merge_all()
 
 
 # peer functionality cmds:
@@ -220,7 +244,12 @@ def merge_chunks(target_file): # done
             with open(os.path.join(MEMORY_DIR, file_name), 'rb') as chunk_file:
                 # Read the contents of the chunk file and write them to the target file
                 merged_file.write(chunk_file.read())
-        print("Merge complete!")
+        print(f"Merge {target_file} complete!")
+
+def merge_all():
+    for big_file_name in TORRENT_STRUCTURE:
+        merge_chunks(big_file_name)
+    print("Merged all files!")
 
 def check_merge_file(file_name): # done
     this_peer_info["chunk_status"]=update_chunk_status()
@@ -231,6 +260,9 @@ def check_merge_file(file_name): # done
             merge=False
             break
     return merge
+
+
+
 ###########################################END##################################################
 #                                   PEER COMMAND FUNCTIONS                                     #
 ###########################################END##################################################
@@ -276,10 +308,11 @@ def handle_request_peer_connection(this_request_handler_socket,request_peer_addr
                     file_path = os.path.join(MEMORY_DIR, msg_parts[3])
                     if os.path.exists(file_path): # if chunk exists on server
                         print(f"Sending {msg_parts[3]} to Peer[{this_peer_info['ip']},{this_peer_info['listen_port']}]...")
-                        this_request_handler_socket.send(bencode(f"Peer[{this_peer_ip},{this_peer_listen_port}] starts uploading chunk {msg_parts[3]} to Peer[{msg_parts[1]},{msg_parts[2]}]").encode(FORMAT)) # send to peer
+                        this_request_handler_socket.send(bencode(f"Peer[{this_peer_ip},{this_peer_listen_port}] starts uploading chunk {msg_parts[3]} to Peer[{request_peer_ip},{request_peer_port}]").encode(FORMAT)) # send to peer
                         send_file(this_request_handler_socket, file_path) # send chunk
                         print(f"{msg_parts[3]} sent successfully!")
                         this_peer_info["uploaded"]+=1
+                        update_status_to_tracker()
                     else:
                         print(f"File {msg_parts[3]} does not exist.")
                         this_request_handler_socket.send(bencode(f"File {msg_parts[3]} not found!").encode(FORMAT))
@@ -294,7 +327,7 @@ def handle_request_peer_connection(this_request_handler_socket,request_peer_addr
                     else:
                         print(f"[REQUEST PEER DISCONNECTED THIS PEER] {msg_parts[1]}")
                         # 2/ send "Peer[this_peer_id,this_peer_port] disconnected from Peer[target_peer_ip,target_peer_port]"
-                        this_request_handler_socket.send(bencode(f"Peer[{this_peer_ip},{this_peer_listen_port}] disconnected from Peer[{msg_parts[1]},{msg_parts[2]}]").encode(FORMAT))  # send to peer
+                        this_request_handler_socket.send(bencode(f"Peer[{this_peer_ip},{this_peer_listen_port}] disconnected from Peer[{request_peer_ip},{request_peer_port}]").encode(FORMAT))  # send to peer
                         connected_peers[f"{request_peer_ip} {request_peer_port}"] = False # 3/
                         this_request_handler_socket.close()
                 case _:
@@ -390,6 +423,25 @@ def send_file(client_socket, file_path):
     with open(file_path, 'rb') as file:
         data = file.read()
         client_socket.sendall(data)
+
+def is_enough_chunk():
+    update_chunk_status()
+    chunk_status=this_peer_info["chunk_status"]
+    for file_name in chunk_status:
+        if chunk_status[file_name]==0:
+            return False
+    return True
+
+def pick_peer_to_download(file_name):
+    update_status_to_tracker()
+    target_peer=None
+    for peer in Peer_set:
+        if this_peer_info["ip"]==peer["ip"] and this_peer_info["listen_port"]==peer["listen_port"]:
+            continue
+        curr_chunk_status=peer["chunk_status"]
+        if target_peer==None or (curr_chunk_status[file_name]==1 and peer["uploaded"]<target_peer["uploaded"]):
+            target_peer=peer
+    return target_peer
 
 ###########################################END##################################################
 #                                       OTHER FUNCTIONS                                        #

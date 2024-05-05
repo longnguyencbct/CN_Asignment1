@@ -17,5 +17,10 @@
         "file2.webm.part5",
         "file2.webm.part6",
         "file2.webm.part7"
+    ],
+    "sus_file.mp4" : [
+        "sus_file.mp4.part1",
+        "sus_file.mp4.part2",
+        "sus_file.mp4.part3"
     ]
 }

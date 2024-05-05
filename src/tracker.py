@@ -5,7 +5,7 @@ import socket
 from bencode import bencode,bdecode
 
 
-HEADER = 1024
+HEADER = 512*1024
 PORT = 7001
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER,PORT)
