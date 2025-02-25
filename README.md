@@ -1,61 +1,93 @@
+# P2P File Sharing Application
 
-# CN_Asignment1
+This project is a peer-to-peer (P2P) file-sharing application implemented in Python. It allows multiple peers to share and download file chunks, coordinated by a central tracker.
 
-**PEER CMDS: (peer.py)**  
-- peer-tracker communication cmds:  
-&emsp;&emsp;&emsp;/connect_tracker:   
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ Peer todo: establish connection to tracker  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;2/ Tracker response: "Tracker established connection to Peer[peer_ip]" (tracker runs a "listening peer cmds" while-loop thread)   
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;3/ Peer todo: tracker_connected = True  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;4/ run /get_peer_set  
-&emsp;&emsp;&emsp;/get_peer_set:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ run /check_tracker_connected. Go to step 2/ if returned True  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;2/ Peer todo: send "/get_peer_set" (string msg) to tracker.  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;3/ Tracker response: bencoded tracker's PEER_SET (string)  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;4/ Peer todo: bdecode tracker response (list if dictionaries [{},{},{}] ) and update peer's PEER_SET  
-&emsp;&emsp;&emsp;/update_status_to_tracker:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ run /check_tracker_connected. Go to step 2/ if returned True  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;2/ Peer todo: send "/update_status_to_tracker" [bencoded Peer_info] (string msg) to tracker  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;3/ Peer todo: send "[bencoded Peer_info]" (string msg) to tracker  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;4/ Tracker response: "Tracker updated Peer[peer_ip] status" (tracker updates peer set in tracker, but  other peers' PEER_SET will not update unless /get_peer_set is run)  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;5/ run /get_peer_set  
-&emsp;&emsp;&emsp;/disconnect_tracker:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ run /check_tracker_connected. Go to step 2/ if returned True  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;2/ Peer todo: send "/disconnect_tracker" (string msg) to tracker   
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;3/ Tracker response: "Peer[peer_id] disconnected from tracker"  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;4/ Peer todo: disconnect from tracker but can still upload/download chunks to/from peers (tracker_connected = False, tracker stops "listening peer cmds" thread)  
-&emsp;&emsp;&emsp;/quit_torrent:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ run /check_tracker_connected. Run /connect_tracker then Go to step 2/ if returned False  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;2/ Peer todo: send "/quit_torrent" (string msg) to tracker  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;3/ Tracker response: "Peer[peer_id] quited torrent"  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;4/ Peer todo: leave the torrent and won't upload/ download chunks (peer.py program stops running)  
-- peer-peer communication cmds:  
-&emsp;&emsp;&emsp;/connect_peer [target_peer_IP]:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ establish connection to target peer  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;2/ Target peer response: "Target Peer[target_peer_IP] established connection to This Peer" (target peer runs a "listening peer cmds" while-loop thread)  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;3/ This peer todo: connected_peers={"[target_peer_IP1]":True|False, "[target_peer_IP2]":True|False,...} (only peer ip from PEER_SET)  
-&emsp;&emsp;&emsp;/request_download [target_peer_IP] [missing_chunks[i]]:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ run /check_target_peer_connected [target_peer_IP]. Go to step 2/ if returned True   
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;2/ This peer todo: send "/request_download" (string msg) to [target_peer_IP].  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;3/ This peer todo: send "[missing_chunks[i]]" (string msg) to [target_peer_IP]. ([missing_chunks[i]] is name of the chunk file)  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;4/ Target peer response: "Target Peer[target_peer_IP] starts uploading chunk [missing_chunks[i]] to This peer"   
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;5/ This peer todo: Save new chunk to Memory_peer folder  
-&emsp;&emsp;&emsp;/upload_chunk [target_peer_IP][curr_chunks[i]]:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ run /check_target_peer_connected [target_peer_IP]. Go to step 2/ if returned True  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;2/ This peer todo: send "/request_download" (string msg) to [target_peer_IP]. 
-&emsp;&emsp;&emsp;/disconnect_peer [target_peer_IP]:  
-- peer functionality cmds:  
-&emsp;&emsp;&emsp;/check_tracker_connected:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ check if tracker_connected==??:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;+ True:	Return True  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;+ False: Peer todo: print "Peer is not connected to tracker". Return False  
-&emsp;&emsp;&emsp;/check_target_peer_connected [target_peer_IP] :  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;1/ check if connected_peers[target_peer_IP]==??:  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;+ True:	Return True  
-&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;+ False: Peer todo: print "This peer is not connected to Peer[target_peer_IP]". Return False  
-&emsp;&emsp;&emsp;/see_peer_set  
-&emsp;&emsp;&emsp;/see_connected_seeders  
-&emsp;&emsp;&emsp;/see_connected_leechers  
-&emsp;&emsp;&emsp;/see_current_chunks  
-&emsp;&emsp;&emsp;/merge_chunks  
-**TRACKER FUNCTIONALITY: (tracker.py)**
+## Project Structure
+
+The project directory contains the following files and directories:
+
+- `Assignment 1-Network Application P2P File Sharing.pdf`: Project assignment document.
+- `plan_btl1.txt`: Detailed plan and command descriptions for the P2P file-sharing application.
+- `README.md`: Project documentation.
+- `src/`: Source code directory containing the implementation of the P2P file-sharing application.
+  - `bencode.py`: Implementation of bencoding and bdecoding functions.
+  - `Memory/`: Directory containing file chunks for the first peer.
+  - `Memory2/`: Directory containing file chunks for the second peer.
+  - `Memory3/`: Directory containing file chunks for the third peer.
+  - `peer_helper.py`: Helper functions for the first peer.
+  - `peer_helper2.py`: Helper functions for the second peer.
+  - `peer_helper3.py`: Helper functions for the third peer.
+  - `peer.py`: Main script for the first peer.
+  - `peer2.py`: Main script for the second peer.
+  - `peer3.py`: Main script for the third peer.
+  - `split_file.py`: Script for splitting files into chunks.
+  - `tracker.py`: Implementation of the tracker that coordinates the peers.
+
+## Components
+
+### Tracker
+
+The tracker is implemented in [`tracker.py`](src/tracker.py). It listens for connections from peers, maintains a list of connected peers (`PEER_SET`), and responds to various commands from peers.
+
+### Peers
+
+Each peer is represented by a Python script and corresponding helper files:
+- [`peer.py`](src/peer.py) and [`peer_helper.py`](src/peer_helper.py)
+- [`peer2.py`](src/peer2.py) and [`peer_helper2.py`](src/peer_helper2.py)
+- [`peer3.py`](src/peer3.py) and [`peer_helper3.py`](src/peer_helper3.py)
+
+Peers can connect to the tracker, request and download file chunks from other peers, and upload file chunks to other peers.
+
+### File Handling
+
+Files are split into chunks for sharing, as seen in [`split_file.py`](src/split_file.py). The `Memory`, `Memory2`, and `Memory3` directories contain the file chunks for different peers. The `torrent_file` in each `Memory` directory describes the structure of the files being shared.
+
+### Bencoding
+
+The project uses bencoding for encoding and decoding messages between peers and the tracker, implemented in [`bencode.py`](src/bencode.py).
+
+## Commands and Functionality
+
+### Peer-Tracker Communication Commands
+
+- `/connect_tracker`: Establish connection to the tracker.
+- `/get_peer_set`: Retrieve the list of connected peers from the tracker.
+- `/update_status_to_tracker`: Update the peer's status to the tracker.
+- `/disconnect_tracker`: Disconnect from the tracker.
+- `/quit_torrent`: Quit the torrent and stop the peer.
+
+### Peer-Peer Communication Commands
+
+- `/connect_peer [target_peer_IP] [target_peer_port]`: Connect to another peer.
+- `/ping [target_peer_IP] [target_peer_port]`: Ping another peer.
+- `/request_download [target_peer_IP] [target_peer_port] [missing_chunk]`: Request a file chunk from another peer.
+- `/disconnect_peer [target_peer_IP] [target_peer_port]`: Disconnect from another peer.
+
+### Peer Functionality Commands
+
+- `/check_tracker_connected`: Check if the peer is connected to the tracker.
+- `/check_target_peer_connected [target_peer_IP] [target_peer_port]`: Check if the peer is connected to another peer.
+- `/see_this_peer_info`: Display the current peer's information.
+- `/see_peer_set`: Display the list of connected peers.
+- `/see_connected`: Display the list of currently connected peers.
+- `/see_torrent_struct`: Display the structure of the torrent.
+- `/see_chunk_status`: Display the status of file chunks.
+- `/merge_chunks [file_name]`: Merge file chunks into a complete file.
+- `/merge_all`: Merge all file chunks into complete files.
+
+## Running the Application
+
+1. Start the tracker:
+    ```sh
+    python src/tracker.py
+    ```
+
+2. Start the peers:
+    ```sh
+    python src/peer.py
+    python src/peer2.py
+    python src/peer3.py
+    ```
+
+3. Use the commands listed above to interact with the tracker and other peers.
+
