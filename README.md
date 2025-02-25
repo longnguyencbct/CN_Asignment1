@@ -2,6 +2,10 @@
 
 This project is a peer-to-peer (P2P) file-sharing application implemented in Python. It allows multiple peers to share and download file chunks, coordinated by a central tracker.
 
+## Documentation
+
+For detailed project documentation, please refer to the [project documentation](documentation/ASS1_P1_2153535-2153395-2153380.pdf) in the `documentation` folder.
+
 ## Project Structure
 
 The project directory contains the following files and directories:
